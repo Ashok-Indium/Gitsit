@@ -1,6 +1,6 @@
 // Reads and writes the app's tables in gitsit-test through the Rayfin data service: Input_table
 // (every input file's loans, by File_Name), Loan_Model and Loan_Model_Monthly (every loan's Model
-// sheet values), LoanChanges (one row per edited value) and the lookup tables (EXIT, ZIP3 …).
+// sheet values), LoanChanges (one row per edited value) and LookupCache (the BPL_Lookups tables).
 // Every row carries its Table_Type (BPL); the app works on one input file (File_Name) at a time.
 
 import type { Lookups } from '@/engine/lookups';
@@ -275,10 +275,24 @@ export function inputFiles(rows: InputRow[]): { name: string; loans: number }[] 
 
 const lookupNames = (s: (typeof LOOKUP_TABLES)[number]) => ['Table_Type', ...s.columns.map((c) => c.name)];
 
-/** Every lookup table's rows (all categories; the engine keeps this model's), by table name. */
+/**
+ * Every lookup table's rows (all categories; the engine keeps this model's), by table name, from
+ * LookupCache: one row per lookup holding its rows as JSON, written by triggers on the
+ * BPL_Lookups tables. A lookup with no row (or unreadable JSON) keeps the workbook's values.
+ */
 export async function loadLookups(client: Client): Promise<Lookups> {
-  const tables = await Promise.all(LOOKUP_TABLES.map((s) => readAll(client, s.table as TableName, lookupNames(s))));
-  return Object.fromEntries(LOOKUP_TABLES.map((s, i) => [s.table, tables[i]]));
+  const cached = new Map((await readAll(client, 'LookupCache', ['Table_Name', 'Rows_Json'])).map((r) => [String(r.Table_Name), r.Rows_Json]));
+  return Object.fromEntries(LOOKUP_TABLES.map((s) => [s.table, parseRows(cached.get(s.table))]));
+}
+
+function parseRows(json: unknown): Lookups[string] {
+  if (typeof json !== 'string') return [];
+  try {
+    const rows: unknown = JSON.parse(json);
+    return Array.isArray(rows) ? rows : [];
+  } catch {
+    return [];
+  }
 }
 
 /** A value that changes whenever any lookup row of this model's category changes, ignoring row order. */

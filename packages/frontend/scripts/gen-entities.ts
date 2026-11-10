@@ -1,6 +1,7 @@
 // Generates the app's Rayfin data entities (the data service owns the tables in gitsit-test), the
 // table map the app reads and writes with, and the SQL that moves the existing tables over and puts
-// views with the original names (Input_table, EXIT, ZIP3 …) on top of the data-service tables.
+// views with the original names (Input_table, Loan_Model …) on top of the data-service tables, and
+// the BPL_Lookups tables people edit the lookups in (docs/bpl-lookup-tables.sql).
 //
 //   node scripts/gen-entities.ts
 //
@@ -25,15 +26,28 @@ import { LOOKUP_TABLES } from '../src/store/generated/lookup-fields.ts';
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../../..');
 
-interface Column { columnName: string; dataType: string; isNullable: boolean; maxLength?: number }
+interface Column { columnName: string; dataType: string; isNullable: boolean; maxLength?: number; unbounded?: boolean }
 interface Table { tableName: string; columns: Column[] }
 
 const pascal = (s: string) => s.split(/[^A-Za-z0-9]+/).filter(Boolean).map((p) => p[0].toUpperCase() + p.slice(1).toLowerCase()).join('');
 const ALL = ['create', 'read', 'update', 'delete'];
 const READ_CREATE = ['create', 'read'];
 
+/**
+ * The app's copy of the lookup tables: one row per lookup (Table_Name = state_names …) holding its
+ * rows as JSON. Triggers on the BPL_Lookups tables keep it up to date; the app only reads it. (The
+ * data service only reads dbo tables, so this is the one lookup table that stays in dbo.)
+ */
+const CACHE = {
+  table: 'LookupCache', entity: 'LookupCache', key: ['Table_Name'], actions: ['read'],
+  columns: [
+    { columnName: 'Table_Name', dataType: 'nvarchar', isNullable: false, maxLength: 100 },
+    { columnName: 'Rows_Json', dataType: 'nvarchar', isNullable: false, unbounded: true },
+  ] as Column[],
+};
+
 /** Each table: its entity class, natural key (what identifies a row to the app) and actions. */
-const TABLES: { table: string; entity: string; key: string[]; actions: string[]; numbers?: [number, number] }[] = [
+const TABLES: { table: string; entity: string; key: string[]; actions: string[]; numbers?: [number, number]; columns?: Column[] }[] = [
   // One input file's loans: the same loan ID may appear in another file.
   { table: 'Input_table', entity: 'InputLoan', key: ['File_Name', 'loan_id'], actions: ALL },
   // DECIMAL(18,8) keeps Loan_Model's ~470 numbers within SQL's 8,060-byte row (9 bytes each, not 13).
@@ -41,8 +55,8 @@ const TABLES: { table: string; entity: string; key: string[]; actions: string[];
   { table: 'Loan_Model_Monthly', entity: 'LoanModelMonthly', key: ['File_Name', 'loan_id', 'series'], actions: ALL },
   // The change log is append-only.
   { table: 'LoanChanges', entity: 'LoanChange', key: ['File_Name', 'Loan_Id', 'Column_Name', 'Changed_On'], actions: READ_CREATE },
-  // The lookups are maintained in SQL; the app only fills an empty one from the workbook.
-  ...LOOKUP_TABLES.map((s) => ({ table: s.table, entity: `Lookup${pascal(s.table)}`, key: ['Table_Type', ...s.key], actions: READ_CREATE })),
+  // The lookups are edited in the BPL_Lookups tables; the app reads them from this one table.
+  CACHE,
 ];
 
 const DEFAULTS: Record<string, string> = { Table_Type: 'BPL' };
@@ -58,12 +72,12 @@ function decorator(c: Column, numbers: [number, number]): { line: string; ts: st
     name = 'date'; ts = 'Date';
   } else {
     name = 'text'; ts = 'string';
-    opts.push(`max: ${c.maxLength && c.maxLength > 0 ? c.maxLength : 400}`);
+    if (!c.unbounded) opts.push(`max: ${c.maxLength && c.maxLength > 0 ? c.maxLength : 400}`);
   }
   if (DEFAULTS[c.columnName]) opts.push(`default: '${DEFAULTS[c.columnName]}'`);
   else if (c.isNullable) opts.push('optional: true');
   const optional = c.isNullable && !DEFAULTS[c.columnName];
-  return { line: `  @${name}({ ${opts.join(', ')} }) ${c.columnName}${optional ? '?' : '!'}: ${ts};`, ts };
+  return { line: `  @${name}(${opts.length ? `{ ${opts.join(', ')} }` : ''}) ${c.columnName}${optional ? '?' : '!'}: ${ts};`, ts };
 }
 
 /** The data service's table for an entity: its class name pluralised (LookupZip3 -> LookupZip3s). */
@@ -75,15 +89,17 @@ const LOOKUP_SCHEMA = 'BPL_Lookups';
 const OLD_LOOKUP_SCHEMAS = ['dbo', 'Lookups'];
 
 /**
- * The lookup tables as people edit them: dbo.BPL_<Name> (state_names -> BPL_StateNames) with
- * Table_Type first, then the text columns and then the number columns, each in the workbook's
- * column order; keyed by Table_Type and the lookup's own key, no id, BPL rows only. A trigger
- * copies every change into the app's data-service table (Lookup…s), which the app reads.
+ * The lookup tables as people edit them: BPL_Lookups.BPL_<Name> (state_names -> BPL_StateNames)
+ * with Table_Type first, then the text columns and then the number columns, each in the workbook's
+ * column order; keyed by Table_Type and the lookup's own key, no id, BPL rows only. A trigger on
+ * each writes its rows, as JSON, into the app's dbo.LookupCaches row for that lookup.
  */
-function bplLookupSql(defs: { table: string; entity: string; key: string[]; columns: Column[] }[]): string {
+function bplLookupSql(defs: { table: string; key: string[]; columns: Column[] }[]): string {
+  const cache = `dbo.[${sourceTable(CACHE.entity)}]`;
   const blocks = defs.map((d) => {
     const name = `BPL_${pascal(d.table)}`;
-    const source = sourceTable(d.entity);
+    // The data-service table an earlier version kept this lookup in (the first fill comes from it).
+    const old = sourceTable(`Lookup${pascal(d.table)}`);
     const rest = d.columns.filter((c) => c.columnName !== 'Table_Type');
     const ordered = [...rest.filter((c) => !isNumber(c)), ...rest.filter(isNumber)];
     const all = ['Table_Type', ...ordered.map((c) => c.columnName)];
@@ -93,8 +109,11 @@ function bplLookupSql(defs: { table: string; entity: string; key: string[]; colu
       return `  [${c.columnName}] ${type} ${d.key.includes(c.columnName) || !c.isNullable ? 'NOT NULL' : 'NULL'}`;
     };
     const table = `[${LOOKUP_SCHEMA}].[${name}]`;
+    const sync = `  DELETE FROM ${cache} WHERE [Table_Name] = N'${d.table}';
+  INSERT INTO ${cache} ([Table_Name], [Rows_Json])
+  SELECT N'${d.table}', ISNULL((SELECT ${list} FROM ${table} FOR JSON PATH, INCLUDE_NULL_VALUES), N'[]');`;
     return `
--- ${LOOKUP_SCHEMA}.${name}: the ${d.table} lookup (key ${d.key.join(' + ')}); the app reads it through dbo.${source}.
+-- ${LOOKUP_SCHEMA}.${name}: the ${d.table} lookup (key ${d.key.join(' + ')}); the app reads it from ${cache}.
 SET XACT_ABORT ON;
 -- An earlier version kept it in ${OLD_LOOKUP_SCHEMAS.join(' or ')}: move it into the ${LOOKUP_SCHEMA} folder.
 ${OLD_LOOKUP_SCHEMAS.map((s) => `IF OBJECT_ID('[${s}].[${name}]', 'U') IS NOT NULL AND OBJECT_ID('${table}', 'U') IS NULL
@@ -107,18 +126,21 @@ BEGIN
 ${ordered.map((c) => `  ${column(c)}`).join(',\n')},
     CONSTRAINT [PK_${name}] PRIMARY KEY (${d.key.map((k) => `[${k}]`).join(', ')})
   );
-  -- Today's values, from the app's table.
-  INSERT INTO ${table} (${list}) SELECT ${list} FROM dbo.[${source}] WHERE [Table_Type] = N'BPL';
+  -- The values an earlier version of the app held, if any.
+  IF OBJECT_ID('dbo.[${old}]', 'U') IS NOT NULL
+    EXEC('INSERT INTO ${table} (${list}) SELECT ${list} FROM dbo.[${old}] WHERE [Table_Type] = N''BPL''');
   COMMIT;
 END
 GO
 CREATE OR ALTER TRIGGER [${LOOKUP_SCHEMA}].[trg_${name}_sync] ON ${table} AFTER INSERT, UPDATE, DELETE AS
 BEGIN
   SET NOCOUNT ON;
-  -- Every change replaces the app's BPL rows with this table's.
-  DELETE FROM dbo.[${source}] WHERE [Table_Type] = N'BPL';
-  INSERT INTO dbo.[${source}] (${list}) SELECT ${list} FROM ${table};
+  -- Every change replaces the app's copy of this lookup.
+${sync}
 END
+GO
+-- The app's copy as of now.
+${sync.replace(/^ {2}/gm, '')}
 GO
 DROP VIEW IF EXISTS dbo.[${d.table}];
 GO`;
@@ -126,8 +148,8 @@ GO`;
   return `-- The BPL lookup tables, in their own schema (folder) ${LOOKUP_SCHEMA}: edit these (SELECT / INSERT /
 -- UPDATE / DELETE), e.g. ${LOOKUP_SCHEMA}.BPL_StateNames. Each has Table_Type first, then its text columns
 -- and its number columns in the model workbook's order, no id column, and its own key as the primary
--- key. A trigger on each copies every change into the app's internal data-service table (dbo.Lookup…s),
--- which the app reads. Safe to rerun.
+-- key. A trigger on each copies every change into the app's ${cache} (one row of JSON per lookup),
+-- which the app reads. Run after the app's deployment created ${cache}. Safe to rerun.
 -- Generated by packages/frontend/scripts/gen-entities.ts.
 
 IF SCHEMA_ID('${LOOKUP_SCHEMA}') IS NULL EXEC('CREATE SCHEMA [${LOOKUP_SCHEMA}]');
@@ -142,14 +164,16 @@ GO`).join('\n')}
 function main() {
   const schema = JSON.parse(readFileSync(resolve(root, 'docs/table-schema.json'), 'utf8')) as { schemas: { schemaName: string; tables: Table[] }[] };
   const tables = schema.schemas.find((s) => s.schemaName === 'dbo')!.tables;
-  const defs = TABLES.map((d) => {
-    const t = tables.find((x) => x.tableName === d.table);
-    if (!t) throw new Error(`dbo.${d.table} is not in docs/table-schema.json`);
+  const columnsOf = (table: string) => {
+    const t = tables.find((x) => x.tableName === table);
+    if (!t) throw new Error(`dbo.${table} is not in docs/table-schema.json`);
     for (const c of t.columns) {
-      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(c.columnName) || c.columnName === 'id') throw new Error(`${d.table}.${c.columnName} cannot be an entity property`);
+      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(c.columnName) || c.columnName === 'id') throw new Error(`${table}.${c.columnName} cannot be an entity property`);
     }
-    return { ...d, columns: t.columns };
-  });
+    return t.columns;
+  };
+  const defs = TABLES.map((d) => ({ ...d, columns: d.columns ?? columnsOf(d.table) }));
+  const lookupDefs = LOOKUP_TABLES.map((s) => ({ table: s.table, key: ['Table_Type', ...s.key], columns: columnsOf(s.table) }));
 
   // ---- entities ----
   writeFileSync(resolve(root, 'packages/data/src/entities.ts'), `// Generated by packages/frontend/scripts/gen-entities.ts - do not edit by hand.
@@ -195,7 +219,7 @@ export const DATA_TABLES = ${JSON.stringify(map, null, 2)} as const;
 -- packages/frontend/scripts/gen-entities.ts. Run after \`rayfin up db apply\` created the tables.
 -- {{table}} placeholders are filled with each entity's table name from the deployed DAB config.
 -- Each table: copy, check the row count, drop the original; then docs/table-views.sql.
-${defs.filter((d) => d.table !== 'LoanChanges').map((d) => `
+${defs.filter((d) => d.table !== 'LoanChanges' && d.table !== CACHE.table).map((d) => `
 SET XACT_ABORT ON;
 BEGIN TRAN;
 IF OBJECT_ID('dbo.[${d.table}]', 'U') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.[{{${d.entity}}}])
@@ -213,14 +237,14 @@ GO`).join('\n')}
 -- Query and edit them as before: SELECT / INSERT / UPDATE / DELETE work on each view.
 -- (The lookup tables are the ${LOOKUP_SCHEMA}.BPL_ tables instead: docs/bpl-lookup-tables.sql.)
 -- Generated by packages/frontend/scripts/gen-entities.ts.
-${defs.filter((d) => d.table !== 'LoanChanges' && !lookups.has(d.table)).map((d) => `
+${defs.filter((d) => d.table !== 'LoanChanges' && d.table !== CACHE.table && !lookups.has(d.table)).map((d) => `
 CREATE OR ALTER VIEW dbo.[${d.table}] AS
 SELECT ${cols(d)} FROM dbo.[{{${d.entity}}}];
 GO`).join('\n')}
 `);
 
   // ---- SQL: the BPL_ lookup tables people edit ----
-  writeFileSync(resolve(root, 'docs/bpl-lookup-tables.sql'), bplLookupSql(defs.filter((d) => lookups.has(d.table))));
+  writeFileSync(resolve(root, 'docs/bpl-lookup-tables.sql'), bplLookupSql(lookupDefs));
 
   for (const d of defs) console.log(`${d.table}: ${d.entity}, ${d.columns.length} columns, key ${d.key.join(' + ')}`);
 }
