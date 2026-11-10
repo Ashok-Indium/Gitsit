@@ -14,7 +14,6 @@ import type { InputRow } from '@/engine/load-input';
 import inputRows from './generated/input-rows.json';
 import { DATA_TABLES } from './generated/data-tables';
 import { LOOKUP_TABLES, TABLE_TYPE } from './generated/lookup-fields';
-import lookupRows from './generated/lookup-rows.json';
 import { FILE_NAME, INPUT_COLUMNS, MODEL_COLUMNS, MONTH_COLUMNS, MONTHLY_SERIES } from './generated/store-fields';
 
 type Client = Awaited<ReturnType<typeof getRayfinClient>>;
@@ -274,28 +273,12 @@ export function inputFiles(rows: InputRow[]): { name: string; loans: number }[] 
 
 // ---------- lookup tables ----------
 
-const SEED_LOOKUPS = lookupRows as unknown as Lookups;
 const lookupNames = (s: (typeof LOOKUP_TABLES)[number]) => ['Table_Type', ...s.columns.map((c) => c.name)];
 
 /** Every lookup table's rows (all categories; the engine keeps this model's), by table name. */
 export async function loadLookups(client: Client): Promise<Lookups> {
   const tables = await Promise.all(LOOKUP_TABLES.map((s) => readAll(client, s.table as TableName, lookupNames(s))));
   return Object.fromEntries(LOOKUP_TABLES.map((s, i) => [s.table, tables[i]]));
-}
-
-/**
- * Fills each lookup table that has no rows of this model's category with the workbook's values.
- * Returns the tables it filled, with their rows as now stored.
- */
-export async function seedLookups(client: Client, lookups: Lookups): Promise<Lookups> {
-  const filled: Lookups = {};
-  for (const s of LOOKUP_TABLES) {
-    if ((lookups[s.table] ?? []).some((r) => r.Table_Type === TABLE_TYPE)) continue;
-    const rows = (SEED_LOOKUPS[s.table] ?? []).map((r) => ({ Table_Type: TABLE_TYPE, ...r }));
-    await inBatches(rows, 10, (r) => insertRow(client, s.table as TableName, r));
-    filled[s.table] = rows;
-  }
-  return filled;
 }
 
 /** A value that changes whenever any lookup row of this model's category changes, ignoring row order. */

@@ -7,7 +7,7 @@ import { getRayfinClient } from '@/lib/rayfin-client';
 
 import bundledRows from './generated/input-rows.json';
 import { FILE_NAME } from './generated/store-fields';
-import { inputFiles, inputFingerprint, loadInputRows, loadLookups, lookupsFingerprint, seedInput, seedLookups } from './shared-model';
+import { inputFiles, inputFingerprint, loadInputRows, loadLookups, lookupsFingerprint, seedInput } from './shared-model';
 
 /** How often the app looks for new input files and lookup changes while it is on screen. */
 const CHECK_EVERY_MS = 5 * 60 * 1000;
@@ -36,16 +36,15 @@ export interface InputLoans {
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 type Client = Awaited<ReturnType<typeof getRayfinClient>>;
 
-/** The lookup tables, filling any that have no rows yet from the workbook's values. */
-async function readLookups(client: Client): Promise<Lookups> {
-  const lookups = await loadLookups(client);
-  const filled = await seedLookups(client, lookups);
-  return Object.keys(filled).length ? await loadLookups(client) : lookups;
-}
+/**
+ * The lookup tables. They are filled from the BPL_ tables in SQL (a trigger copies every edit),
+ * so the app only reads them: refilling them here would leave them out of step with BPL_.
+ */
+const readLookups = (client: Client): Promise<Lookups> => loadLookups(client);
 
 /**
  * Reads every input file's loans from Input_table and the lookup tables when the app opens
- * (filling empty tables from the bundled input file and the workbook first), then checks for
+ * (filling an empty Input_table from the bundled input file first), then checks for
  * changes every few minutes and on returning to the tab. The model is built from `fileName`'s
  * loans, or the first file when it is not in the table.
  */
