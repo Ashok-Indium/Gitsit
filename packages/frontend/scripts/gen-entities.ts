@@ -70,7 +70,9 @@ function decorator(c: Column, numbers: [number, number]): { line: string; ts: st
 const sourceTable = (entity: string) => (entity.endsWith('s') ? entity : `${entity}s`);
 const isNumber = (c: Column) => ['float', 'real', 'decimal', 'numeric'].includes(c.dataType.toLowerCase());
 /** The schema (its own folder in the SQL editor) the BPL_ lookup tables live in. */
-const LOOKUP_SCHEMA = 'Lookups';
+const LOOKUP_SCHEMA = 'BPL_Lookups';
+/** Where earlier versions kept them; the script moves them from there and drops the emptied schema. */
+const OLD_LOOKUP_SCHEMAS = ['dbo', 'Lookups'];
 
 /**
  * The lookup tables as people edit them: dbo.BPL_<Name> (state_names -> BPL_StateNames) with
@@ -94,9 +96,9 @@ function bplLookupSql(defs: { table: string; entity: string; key: string[]; colu
     return `
 -- ${LOOKUP_SCHEMA}.${name}: the ${d.table} lookup (key ${d.key.join(' + ')}); the app reads it through dbo.${source}.
 SET XACT_ABORT ON;
--- An earlier version kept it in dbo: move it into the ${LOOKUP_SCHEMA} folder.
-IF OBJECT_ID('dbo.[${name}]', 'U') IS NOT NULL AND OBJECT_ID('${table}', 'U') IS NULL
-  ALTER SCHEMA [${LOOKUP_SCHEMA}] TRANSFER dbo.[${name}];
+-- An earlier version kept it in ${OLD_LOOKUP_SCHEMAS.join(' or ')}: move it into the ${LOOKUP_SCHEMA} folder.
+${OLD_LOOKUP_SCHEMAS.map((s) => `IF OBJECT_ID('[${s}].[${name}]', 'U') IS NOT NULL AND OBJECT_ID('${table}', 'U') IS NULL
+  ALTER SCHEMA [${LOOKUP_SCHEMA}] TRANSFER [${s}].[${name}];`).join('\n')}
 IF OBJECT_ID('${table}', 'U') IS NULL
 BEGIN
   BEGIN TRANSACTION;
@@ -131,6 +133,9 @@ GO`;
 IF SCHEMA_ID('${LOOKUP_SCHEMA}') IS NULL EXEC('CREATE SCHEMA [${LOOKUP_SCHEMA}]');
 GO
 ${blocks.join('\n')}
+${OLD_LOOKUP_SCHEMAS.filter((s) => s !== 'dbo').map((s) => `IF SCHEMA_ID('${s}') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys.objects WHERE schema_id = SCHEMA_ID('${s}'))
+  EXEC('DROP SCHEMA [${s}]');
+GO`).join('\n')}
 `;
 }
 
