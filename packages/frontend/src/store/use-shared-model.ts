@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { CellChange, CellRef, Snapshot } from '@/engine/protocol';
+import type { CellChange, CellRef, Constants, Snapshot } from '@/engine/protocol';
+import { CONSTRAINT_FIELDS } from '@/engine/constraint-fields';
+import constraintDefaults from '@/engine/generated/constraint-defaults.json';
 import type { ModelEngine } from '@/engine/use-model-engine';
 import { getRayfinClient } from '@/lib/rayfin-client';
 
 import {
-  editEntries, latestEdits, loadChangeLog, loadModelRows, resetEntries, syncModelRows, writeChangeLog,
-  type ChangeEntry, type StoredModel, type StoreUser,
+  editEntries, latestEdits, loadChangeLog, loadModelRows, resetEntries, syncModelRows, saveConstraints, writeChangeLog,
+  type ConstraintChangeEntry, type StoredModel, type StoreUser,
 } from './shared-model';
 
 export type StoreStatus =
@@ -20,9 +22,16 @@ export interface SharedModel {
   commit: (changes: CellChange[]) => Promise<void>;
   reset: (cells: CellRef[]) => Promise<void>;
   resetAll: () => Promise<void>;
+  /**
+   * Applies model constants to the model and saves them to ConstraintValues (Constraints.BPL_Constraints
+   * in SQL), logging them in ConstraintChanges. Resolves with whether the model took them and whether
+   * they were saved (nothing is written without a signed-in user or without entries).
+   */
+  applyConstants: (constants: Constants, entries: ConstraintChangeEntry[]) => Promise<{ applied: boolean; saved: boolean; error?: string }>;
 }
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
+type Client = Awaited<ReturnType<typeof getRayfinClient>>;
 
 /**
  * Keeps one input file's model in step with Fabric: when the model loads it replays everyone's
@@ -79,11 +88,12 @@ export function useSharedModel(engine: ModelEngine, user: StoreUser | null, offl
     });
   }, [snapshot, ready, user, fileName, enqueue, sync]);
 
-  const record = useCallback(async (entries: ChangeEntry[], apply: () => Promise<Snapshot | null>) => {
+  /** Applies a change to the model, then writes its log rows (`log`, when there are any) and the recalculated loans. */
+  const record = useCallback(async (log: ((client: Client) => Promise<void>) | null, apply: () => Promise<Snapshot | null>) => {
     const next = await apply();
-    if (!next || !user || !fileName || !entries.length) return;
+    if (!next || !user || !fileName || !log) return;
     await enqueue(async () => {
-      await writeChangeLog(await getRayfinClient(), entries);
+      await log(await getRayfinClient());
       await sync(next, user, fileName);
     });
   }, [user, fileName, enqueue, sync]);
@@ -91,24 +101,42 @@ export function useSharedModel(engine: ModelEngine, user: StoreUser | null, offl
   const commit = useCallback(async (changes: CellChange[]) => {
     const before = engineRef.current.snapshot;
     const entries = before && user ? editEntries(before, changes, user, fileNameOf) : [];
-    await record(entries, () => engineRef.current.setOverrides(changes));
+    await record(entries.length ? (c) => writeChangeLog(c, entries) : null, () => engineRef.current.setOverrides(changes));
   }, [user, record, fileNameOf]);
 
   const reset = useCallback(async (cells: CellRef[]) => {
     const before = engineRef.current.snapshot;
     const entries = before && user ? resetEntries(before, cells, user, fileNameOf) : [];
-    await record(entries, () => engineRef.current.resetOverrides(cells));
+    await record(entries.length ? (c) => writeChangeLog(c, entries) : null, () => engineRef.current.resetOverrides(cells));
   }, [user, record, fileNameOf]);
 
   const resetAll = useCallback(async () => {
     const before = engineRef.current.snapshot;
     const entries = before && user ? resetEntries(before, before.overrides, user, fileNameOf) : [];
-    await record(entries, () => engineRef.current.resetAll());
+    await record(entries.length ? (c) => writeChangeLog(c, entries) : null, () => engineRef.current.resetAll());
   }, [user, record, fileNameOf]);
+
+  const applyConstants = useCallback(async (constants: Constants, entries: ConstraintChangeEntry[]) => {
+    const next = await engineRef.current.setConstants(constants);
+    if (!next) return { applied: false, saved: false };
+    if (!user || !fileName || !entries.length) return { applied: true, saved: false };
+    const outcome: { error?: string } = {};
+    await enqueue(async () => {
+      const client = await getRayfinClient();
+      try {
+        await saveConstraints(client, entries, CONSTRAINT_FIELDS, constraintDefaults as Record<string, string>);
+      } catch (e) {
+        outcome.error = message(e);
+        throw e;
+      }
+      await sync(next, user, fileName);
+    });
+    return { applied: true, saved: !outcome.error, error: outcome.error };
+  }, [user, fileName, enqueue, sync]);
 
   return {
     status: offline ? { state: 'error', message: offline }
       : user ? status : { state: 'error', message: 'Not signed in, so changes are not saved.' },
-    commit, reset, resetAll,
+    commit, reset, resetAll, applyConstants,
   };
 }

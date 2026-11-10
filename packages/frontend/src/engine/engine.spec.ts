@@ -5,7 +5,9 @@ import { resolve } from 'node:path';
 import { HyperFormula } from 'hyperformula';
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import { CONSTRAINT_BY_INDEX, CONSTRAINT_FIELDS, constraintCell, writeConstants } from './constraint-fields.ts';
 import { EXCEL_CONFIG, excelText, registerExcelFunctions, roundWith } from './excel-functions.ts';
+import type { Constants } from './protocol.ts';
 import { parseAddress, translateFormula } from './formula-text.ts';
 import { loadInput, loanKey, type InputRow } from './load-input.ts';
 import { dependsOnHiddenRows, rewriteWorkbook } from './rewrite.ts';
@@ -45,9 +47,10 @@ describe('Excel compatibility helpers', () => {
 const template: ModelTemplate = JSON.parse(readFileSync(resolve(import.meta.dirname, 'generated/model-template.json'), 'utf8'));
 const tapeRows: InputRow[] = JSON.parse(readFileSync(resolve(import.meta.dirname, '../store/generated/input-rows.json'), 'utf8'));
 
-/** Builds the model the way the engine worker does, from Input_table-shaped rows. */
-function buildModel(rows: InputRow[]) {
+/** Builds the model the way the engine worker does, from Input_table-shaped rows and model constants. */
+function buildModel(rows: InputRow[], constants?: Constants) {
   const sheets = Object.fromEntries(template.sheetOrder.map((n) => [n, expandSheet(template.sheets[n])]));
+  writeConstants(sheets.Model, constants);
   const loaded = loadInput(sheets.Model, template, rows);
   rewriteWorkbook(sheets, template.names, { Model: loaded.hiddenRows }, dependsOnHiddenRows);
   registerExcelFunctions();
@@ -105,6 +108,26 @@ describe('model loaded from the input tape', () => {
     expect(fewer.loaded.hiddenRows).toHaveLength(28);
     const kept = tapeRows.slice(0, 20).reduce((s, r) => s + base.bids.get(loanKey(r.loan_id))!, 0);
     expect(fewer.cell('CF9')).toBeCloseTo(kept, 1); // cents of rounding
+  }, 60_000);
+
+  it('gives the model its own values when every constant is at the Model sheet value', () => {
+    const defaults: Record<string, string> = JSON.parse(readFileSync(resolve(import.meta.dirname, 'generated/constraint-defaults.json'), 'utf8'));
+    const all: Constants = Object.fromEntries(CONSTRAINT_FIELDS.map((f) => [f.cell, constraintCell(f, defaults[f.index])!]));
+    expect(Object.keys(all)).toHaveLength(CONSTRAINT_FIELDS.length);
+    const same = buildModel(tapeRows, all);
+    for (const a of ['CF9', 'CG9', 'CK9', 'CL9']) expect(same.cell(a)).toBeCloseTo(base.cell(a) as number, 6);
+    for (const [id, bid] of base.bids) expect(same.bids.get(id)).toBeCloseTo(bid, 6);
+    for (const r of base.loaded.loanRows) for (const c of ['AFR', 'AFV']) expect(same.cell(`${c}${r}`)).toBe(base.cell(`${c}${r}`));
+  }, 60_000);
+
+  it('recalculates with changed constants, including ones the workbook types into formulas', () => {
+    const cell = (index: string) => CONSTRAINT_BY_INDEX.get(index)!.cell;
+    const hurdle = buildModel(tapeRows, { [cell('hurdle_npl')]: 1.5 });
+    expect(hurdle.cell('CF9')).toBeLessThan(base.cell('CF9') as number);
+    // Every loan's REO preservation cost uses the high-value amount once the line is above every BPO.
+    const ppres = buildModel(tapeRows, { [cell('reo_ppress_constant')]: 1e9 });
+    for (const r of ppres.loaded.loanRows) expect(ppres.cell(`AFR${r}`)).toBe(-3600);
+    expect(base.loaded.loanRows.some((r) => base.cell(`AFR${r}`) === -9000)).toBe(true);
   }, 60_000);
 
   it('reports loans beyond the 48 the model holds', () => {

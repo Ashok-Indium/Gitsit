@@ -2,17 +2,20 @@ import { BarChart3, ChevronDown, Cloud, CloudOff, Download, History, Loader2, Mo
 import { useContext, useMemo, useState } from 'react';
 
 import { LoanDetail } from '@/components/loan-detail';
+import { CONSTRAINT_BY_INDEX, constraintCell } from '@/engine/constraint-fields';
+import constraintDefaults from '@/engine/generated/constraint-defaults.json';
 import { FIELD_BY_COL } from '@/engine/model-schema';
-import type { Override } from '@/engine/protocol';
+import type { Constants, Override } from '@/engine/protocol';
 import { useModelEngine } from '@/engine/use-model-engine';
 import { AuthContext } from '@/hooks/auth.context';
 import { useTheme } from '@/hooks/theme.context';
-import { displayName } from '@/store/shared-model';
+import { displayName, type ConstraintChangeEntry } from '@/store/shared-model';
 import { FABRIC_SOURCE, useInputLoans } from '@/store/use-input-loans';
 import { useSharedModel, type StoreStatus } from '@/store/use-shared-model';
 import { exportToExcel } from '@/lib/export-excel';
 import { cn } from '@/lib/utils';
 import { pbiFormat } from '@/report/format';
+import type { ConstraintsChoice } from '@/report/constraints';
 import { PAGES, type Filters, type PageId } from '@/report/pages';
 import type { Editing } from '@/report/tables';
 
@@ -93,6 +96,37 @@ function App() {
     onCommitMany: shared.commit,
     onResetMany: shared.reset,
     onOpenLoan: setOpenLoan,
+  };
+  const constraints: ConstraintsChoice = {
+    values: loans.constants,
+    // The model recalculates with the new values at once; they are saved to ConstraintValues
+    // (Constraints.BPL_Constraints in SQL) and logged in ConstraintChanges.
+    onApply: async (values) => {
+      const file = loans.fileName;
+      if (!file) throw new Error('No input file is selected.');
+      const cells: Constants = {};
+      const entries: ConstraintChangeEntry[] = [];
+      const at = new Date();
+      for (const [index, value] of values) {
+        const f = CONSTRAINT_BY_INDEX.get(index);
+        const cell = f ? constraintCell(f, value) : null;
+        if (!f || cell === null) continue;
+        cells[f.cell] = cell;
+        if (user) {
+          entries.push({
+            File_Name: file, Field_Index: index, Field_Name_Display: f.display, User_mail: user.email, Changed_On: at,
+            Old_Value: loans.constants.get(index) ?? (constraintDefaults as Record<string, string>)[index] ?? null, New_Value: value,
+          });
+        }
+      }
+      const n = Object.keys(cells).length;
+      const done = await shared.applyConstants(cells, entries);
+      if (!done.applied) throw new Error("the model couldn't recalculate with them");
+      if (done.saved) loans.rememberConstants(file, new Map(entries.map((e) => [e.Field_Index, e.New_Value])));
+      const what = `Applied ${n} change${n === 1 ? '' : 's'} to ${file}; the model has recalculated.`;
+      const why = done.error ?? (shared.status.state === 'error' ? shared.status.message : 'not signed in');
+      return { saved: done.saved, message: done.saved ? `${what} Saved for this file in Fabric.` : `${what} Not saved to Fabric (${why}); Apply again to retry.` };
+    },
   };
   const loan = snapshot?.loans.find((l) => l.row === openLoan) ?? null;
   const fg = page.filterGroup === 'none' ? 'analysis' : page.filterGroup;
@@ -198,7 +232,7 @@ function App() {
           )}
           {loans.updated && (
             <div role="status" className="m-300 flex flex-wrap items-center justify-between gap-300 rounded-lg border border-action bg-card p-400 text-300">
-              <span>New input files or lookup data have arrived in Fabric. Reload to recalculate with them.</span>
+              <span>New input files, lookup data or constraints have arrived in Fabric. Reload to recalculate with them.</span>
               <button type="button" onClick={() => window.location.reload()}
                 className="inline-flex items-center gap-200 rounded-2xl bg-action px-400 py-200 font-semibold text-action-foreground hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                 <RefreshCw className="icon-size-200" /> Reload
@@ -231,6 +265,7 @@ function App() {
               filters: filters[fg],
               setFilters: (f) => setFilters((all) => ({ ...all, [fg]: f })),
               file: { files: loans.files, fileName: loans.fileName, onFileChange: chooseFile, busy },
+              constraints,
             })
           ) : status !== 'error' && (
             <div className="flex flex-col gap-300 p-300" aria-label="Loading the model">

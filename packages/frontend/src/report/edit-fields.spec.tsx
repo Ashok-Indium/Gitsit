@@ -11,7 +11,7 @@ const loan = (row: number, id: string, state: string, fade: number, bpo: number)
 
 const snapshot: Snapshot = {
   loans: [loan(17, '1001', 'CA', 0.2, 100000), loan(18, '1002', 'NV', 0.3, 200000), loan(19, '1003', 'CA', 0.1, 300000)],
-  assumptions: {}, monthEnds: [], overrides: [], recalcMs: 0,
+  assumptions: {}, constants: {}, monthEnds: [], overrides: [], recalcMs: 0,
 };
 
 function setup() {

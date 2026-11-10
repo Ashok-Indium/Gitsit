@@ -7,7 +7,8 @@ import templateText from './generated/model-template.json?raw';
 import { EXCEL_CONFIG, registerExcelFunctions } from './excel-functions.ts';
 import { colName, colNum, parseAddress } from './formula-text.ts';
 import { ASSUMPTION_CELLS, EDITABLE_COLS, LOAN_COLS, STRIP_MONTHS, STRIPS, type Scenario } from './model-schema.ts';
-import type { CellChange, CellOut, CellRef, EngineRequest, EngineResponse, Override, Snapshot } from './protocol.ts';
+import { CONSTRAINT_FIELDS, writeConstants } from './constraint-fields.ts';
+import type { CellChange, CellOut, CellRef, Constants, EngineRequest, EngineResponse, Override, Snapshot } from './protocol.ts';
 import { loadInput, type InputRow } from './load-input.ts';
 import { applyLookups, type Lookups } from './lookups.ts';
 import { dependsOnHiddenRows, rewriteWorkbook, type Cell } from './rewrite.ts';
@@ -51,20 +52,25 @@ function snapshot(recalcMs: number): Snapshot {
     const { row, col } = parseAddress(a);
     return [a, out(hf!.getCellValue({ sheet: sheetId, row, col }))];
   }));
+  const constants = Object.fromEntries(CONSTRAINT_FIELDS.map((f) => {
+    const { row, col } = parseAddress(f.cell);
+    return [f.cell, out(hf!.getCellValue({ sheet: sheetId, row, col }))];
+  }));
   const monthEnds = stripCols(STRIPS.Perf).map((c) => read(8, c));
   // The Model sheet's Average (row 8) and Total (row 9) cells above the header.
   const summary = {
     average: Object.fromEntries(LOAN_COLS.map((c) => [c, read(8, c)])),
     total: Object.fromEntries(LOAN_COLS.map((c) => [c, read(9, c)])),
   };
-  return { loans, assumptions, monthEnds, summary, overrides: [...overrides.values()], recalcMs };
+  return { loans, assumptions, constants, monthEnds, summary, overrides: [...overrides.values()], recalcMs };
 }
 
-function init(input: InputRow[], lookups?: Lookups): string[] {
+function init(input: InputRow[], lookups?: Lookups, constants?: Constants): string[] {
   template = JSON.parse(templateText) as ModelTemplate;
   const sheets: Record<string, Cell[][]> = {};
   for (const name of template.sheetOrder) sheets[name] = expandSheet(template.sheets[name]);
   applyLookups(sheets, lookups);
+  writeConstants(sheets[MODEL], constants);
   const loaded = loadInput(sheets[MODEL], template, input);
   rewriteWorkbook(sheets, template.names, { [MODEL]: loaded.hiddenRows }, dependsOnHiddenRows);
   loanRows = loaded.loanRows;
@@ -75,6 +81,15 @@ function init(input: InputRow[], lookups?: Lookups): string[] {
   hf = HyperFormula.buildFromSheets(sheets as never, EXCEL_CONFIG);
   sheetId = hf.getSheetId(MODEL)!;
   return loaded.dropped;
+}
+
+function setConstants(constants: Constants): number {
+  return timed(() => hf!.batch(() => {
+    for (const [cell, v] of Object.entries(constants)) {
+      const { row, col } = parseAddress(cell);
+      hf!.setCellContents({ sheet: sheetId, row, col }, [[v]]);
+    }
+  }));
 }
 
 function timed(fn: () => void): number {
@@ -110,7 +125,7 @@ function handle(req: EngineRequest): EngineResponse {
   switch (req.type) {
     case 'init': {
       let dropped: string[] = [];
-      const ms = timed(() => { dropped = init(req.input, req.lookups); });
+      const ms = timed(() => { dropped = init(req.input, req.lookups, req.constants); });
       return {
         id: req.id, ok: true, snapshot: snapshot(ms),
         info: {
@@ -119,6 +134,8 @@ function handle(req: EngineRequest): EngineResponse {
         },
       };
     }
+    case 'setConstants':
+      return { id: req.id, ok: true, snapshot: snapshot(setConstants(req.constants)) };
     case 'set':
       return { id: req.id, ok: true, snapshot: snapshot(applyMany([{ row: req.row, col: req.col, value: req.value }])) };
     case 'setMany':

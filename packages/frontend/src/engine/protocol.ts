@@ -27,6 +27,8 @@ export interface Snapshot {
   loans: LoanSnapshot[];
   /** Assumption values by Model cell (e.g. CC1). */
   assumptions: Record<string, CellOut>;
+  /** The Constraints page's values as the model holds them, by Model cell. */
+  constants: Record<string, CellOut>;
   /** Month-end dates (Excel serials) of the cash-flow strip months. */
   monthEnds: CellOut[];
   /** The Model sheet's Average (row 8) and Total (row 9) values, by report column. */
@@ -55,8 +57,12 @@ export interface CellChange extends CellRef {
   value: number | string;
 }
 
+/** Model constants (the Constraints page's fields) by Model cell. */
+export type Constants = Record<string, number>;
+
 export type EngineRequest =
-  | { id: number; type: 'init'; input: InputRow[]; source: string; lookups?: Lookups }
+  | { id: number; type: 'init'; input: InputRow[]; source: string; lookups?: Lookups; constants?: Constants }
+  | { id: number; type: 'setConstants'; constants: Constants }
   | { id: number; type: 'set'; row: number; col: string; value: number | string }
   | { id: number; type: 'setMany'; changes: CellChange[] }
   | { id: number; type: 'reset'; row: number; col: string }

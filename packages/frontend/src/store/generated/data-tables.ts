@@ -1290,5 +1290,35 @@ export const DATA_TABLES = {
       "Table_Name",
       "Rows_Json"
     ]
+  },
+  "ConstraintValues": {
+    "entity": "ConstraintValue",
+    "key": [
+      "File_Name",
+      "Field_Index"
+    ],
+    "columns": [
+      "File_Name",
+      "Field_Index",
+      "Field_Name_Display",
+      "Value"
+    ]
+  },
+  "ConstraintChanges": {
+    "entity": "ConstraintChange",
+    "key": [
+      "File_Name",
+      "Field_Index",
+      "Changed_On"
+    ],
+    "columns": [
+      "File_Name",
+      "Field_Index",
+      "Field_Name_Display",
+      "Old_Value",
+      "New_Value",
+      "User_mail",
+      "Changed_On"
+    ]
   }
 } as const;

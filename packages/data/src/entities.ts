@@ -1282,4 +1282,29 @@ export class LookupCache {
   @text() Rows_Json!: string;
 }
 
-export const ENTITIES = [InputLoan, LoanModel, LoanModelMonthly, LoanChange, LookupCache];
+/** ConstraintValues: key File_Name + Field_Index. */
+@entity()
+@authenticated(['create', 'read', 'update', 'delete'])
+export class ConstraintValue {
+  @uuid() id!: string;
+  @text({ max: 200 }) File_Name!: string;
+  @text({ max: 100 }) Field_Index!: string;
+  @text({ max: 200 }) Field_Name_Display!: string;
+  @text({ max: 100, optional: true }) Value?: string;
+}
+
+/** ConstraintChanges: key File_Name + Field_Index + Changed_On. */
+@entity()
+@authenticated(['create', 'read'])
+export class ConstraintChange {
+  @uuid() id!: string;
+  @text({ max: 200 }) File_Name!: string;
+  @text({ max: 100 }) Field_Index!: string;
+  @text({ max: 200 }) Field_Name_Display!: string;
+  @text({ max: 100, optional: true }) Old_Value?: string;
+  @text({ max: 100, optional: true }) New_Value?: string;
+  @text({ max: 200 }) User_mail!: string;
+  @date() Changed_On!: Date;
+}
+
+export const ENTITIES = [InputLoan, LoanModel, LoanModelMonthly, LoanChange, LookupCache, ConstraintValue, ConstraintChange];

@@ -9,6 +9,7 @@ import type { Snapshot } from '@/engine/protocol';
 import { REPORT_TABLES } from '@/engine/report-fields';
 import { cn } from '@/lib/utils';
 
+import { ConstraintsPage, type ConstraintsChoice } from './constraints';
 import { EditFieldsPage } from './edit-fields';
 import { ALL_SECTION_COLUMNS, applyFilters, LINKS, optionsOf, SECTIONS, sheetSummary, type Filters, type SectionId } from './home-sections';
 import { Homepage2 } from './homepage2';
@@ -47,6 +48,8 @@ export interface PageProps {
   setFilters: (f: Filters) => void;
   navigate: (page: PageId) => void;
   file: FileChoice;
+  /** The selected file's model constants (the Constraints page). */
+  constraints?: ConstraintsChoice;
 }
 
 function AnalysisSlicers({ snapshot, filters, setFilters }: Pick<PageProps, 'snapshot' | 'filters' | 'setFilters'>) {
@@ -319,7 +322,7 @@ export function AssumptionsPage({ snapshot, editing }: PageProps) {
 // ---------- page registry ----------
 
 export type PageId =
-  | 'home' | 'homepage2' | 'bidSummary' | 'stratification' | 'exits' | 'mix' | 'loanDetail' | 'assumptions' | 'edit_fields'
+  | 'home' | 'homepage2' | 'bidSummary' | 'stratification' | 'exits' | 'mix' | 'loanDetail' | 'assumptions' | 'edit_fields' | 'constraints'
   | 'h-sellerValue' | 'h-sellerUpb' | 'h-totalUpb' | 'h-assetValue' | 'h-assetMm' | 'h-ltv' | 'h-dtv'
   | 'h-monthsDq' | 'h-seasoned' | 'h-rate' | 'h-pi' | 'h-origYear' | 'h-payersYtm';
 
@@ -359,4 +362,5 @@ export const PAGES: PageDef[] = [
   { id: 'loanDetail', title: 'Loan Detail', group: 'main', filterGroup: 'analysis', render: (p) => <LoanDetailPage {...p} /> },
   { id: 'assumptions', title: 'Assumptions', group: 'main', filterGroup: 'none', render: (p) => <AssumptionsPage {...p} /> },
   { id: 'edit_fields', title: 'Edit Fields', group: 'main', filterGroup: 'none', render: (p) => <EditFieldsPage {...p} /> },
+  { id: 'constraints', title: 'Constraints', group: 'main', filterGroup: 'none', render: (p) => <ConstraintsPage {...p} /> },
 ];

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { InputRow } from './load-input.ts';
 import type { Lookups } from './lookups.ts';
-import type { CellChange, CellRef, EngineRequest, EngineResponse, Snapshot, TemplateInfo } from './protocol.ts';
+import type { CellChange, CellRef, Constants, EngineRequest, EngineResponse, Snapshot, TemplateInfo } from './protocol.ts';
 
 type Pending = { resolve: (r: EngineResponse) => void };
 type Payload = EngineRequest extends infer R ? (R extends { id: number } ? Omit<R, 'id'> : never) : never;
@@ -23,6 +23,8 @@ export interface ModelEngine {
   resetOverride: (row: number, col: string) => Promise<Snapshot | null>;
   resetOverrides: (cells: CellRef[]) => Promise<Snapshot | null>;
   resetAll: () => Promise<Snapshot | null>;
+  /** Write model constants (the Constraints page's fields) into their cells, with one recalculation. */
+  setConstants: (constants: Constants) => Promise<Snapshot | null>;
 }
 
 export interface EngineInput {
@@ -33,6 +35,8 @@ export interface EngineInput {
   lookups?: Lookups;
   /** The input file (File_Name) the rows come from. */
   fileName?: string;
+  /** That file's model constants (the Constraints page), read when the model is built; absent ones keep the workbook's values. */
+  constants?: () => Constants;
 }
 
 /**
@@ -99,7 +103,7 @@ export function useModelEngine(input: EngineInput | null): ModelEngine {
 
   useEffect(() => {
     if (!input) return;
-    void send({ type: 'init', input: input.rows, source: input.source, lookups: input.lookups }).then((res) => {
+    void send({ type: 'init', input: input.rows, source: input.source, lookups: input.lookups, constants: input.constants?.() }).then((res) => {
       receive(res, true);
       if (res.ok) setBuiltFor(input.fileName ?? '');
     });
@@ -118,5 +122,6 @@ export function useModelEngine(input: EngineInput | null): ModelEngine {
     resetOverride: (row, col) => apply({ type: 'reset', row, col }),
     resetOverrides: (cells) => apply({ type: 'resetMany', cells }),
     resetAll: () => apply({ type: 'resetAll' }),
+    setConstants: (constants) => apply({ type: 'setConstants', constants }),
   };
 }

@@ -1,6 +1,7 @@
 // Reads and writes the app's tables in gitsit-test through the Rayfin data service: Input_table
 // (every input file's loans, by File_Name), Loan_Model and Loan_Model_Monthly (every loan's Model
-// sheet values), LoanChanges (one row per edited value) and LookupCache (the BPL_Lookups tables).
+// sheet values), LoanChanges (one row per edited value), LookupCache (the BPL_Lookups tables and
+// Constraints.BPL_Constraints) and ConstraintChanges (one row per model constant applied).
 // Every row carries its Table_Type (BPL); the app works on one input file (File_Name) at a time.
 
 import type { Lookups } from '@/engine/lookups';
@@ -285,6 +286,71 @@ export async function loadLookups(client: Client): Promise<Lookups> {
   return Object.fromEntries(LOOKUP_TABLES.map((s) => [s.table, parseRows(cached.get(s.table))]));
 }
 
+// ---------- model constants (the Constraints page) ----------
+
+/** A ConstraintValues row (Constraints.BPL_Constraints in SQL). */
+export interface ConstraintRow {
+  File_Name: string;
+  Field_Index: string;
+  Value: string | null;
+}
+
+const CONSTRAINT_NAMES = ['File_Name', 'Field_Index', 'Field_Name_Display', 'Value'];
+
+/** Every input file's model constants. */
+export async function loadConstraints(client: Client): Promise<ConstraintRow[]> {
+  return await readAll(client, 'ConstraintValues', CONSTRAINT_NAMES) as unknown as ConstraintRow[];
+}
+
+/** A file's stored constants by Field_Index. */
+export type FileConstants = Map<string, string | null>;
+
+export function constraintsByFile(rows: ConstraintRow[]): Map<string, FileConstants> {
+  const out = new Map<string, FileConstants>();
+  for (const r of rows) {
+    if (!out.has(r.File_Name)) out.set(r.File_Name, new Map());
+    out.get(r.File_Name)!.set(r.Field_Index, r.Value == null ? null : String(r.Value));
+  }
+  return out;
+}
+
+/** A value that changes whenever any file's constant changes, ignoring row order. */
+export function constraintsFingerprint(byFile: Map<string, FileConstants>): string {
+  return JSON.stringify([...byFile].flatMap(([file, values]) => [...values].map(([index, v]) => `${file}|${index}|${v ?? ''}`)).sort());
+}
+
+/** One ConstraintChanges row: a constant the Constraints page applied to one input file. */
+export interface ConstraintChangeEntry {
+  File_Name: string;
+  Field_Index: string;
+  Field_Name_Display: string;
+  Old_Value: string | null;
+  New_Value: string | null;
+  User_mail: string;
+  Changed_On: Date;
+}
+
+/**
+ * Saves applied constants into ConstraintValues and logs them in ConstraintChanges. A file with no
+ * rows yet gets one for every field: the applied values and `defaults` for the rest.
+ */
+export async function saveConstraints(client: Client, entries: ConstraintChangeEntry[],
+  fields: { index: string; display: string }[], defaults: Record<string, string>): Promise<void> {
+  for (const file of new Set(entries.map((e) => e.File_Name))) {
+    const mine = entries.filter((e) => e.File_Name === file);
+    const stored = new Map((await readAll(client, 'ConstraintValues', CONSTRAINT_NAMES, file)).map((r) => [String(r.Field_Index), r]));
+    const values = new Map(mine.map((e) => [e.Field_Index, e]));
+    const missing = stored.size ? mine.filter((e) => !stored.has(e.Field_Index)).map((e) => ({ index: e.Field_Index, display: e.Field_Name_Display }))
+      : fields;
+    await inBatches(mine.filter((e) => stored.has(e.Field_Index)), 10,
+      (e) => updateRow(client, 'ConstraintValues', stored.get(e.Field_Index)!.id, { Value: e.New_Value }));
+    await inBatches(missing, 10, (f) => insertRow(client, 'ConstraintValues', {
+      File_Name: file, Field_Index: f.index, Field_Name_Display: f.display,
+      Value: values.has(f.index) ? values.get(f.index)!.New_Value : defaults[f.index] ?? null,
+    }));
+  }
+  await inBatches(entries, 10, (e) => insertRow(client, 'ConstraintChanges', { ...e }));
+}
 function parseRows(json: unknown): Lookups[string] {
   if (typeof json !== 'string') return [];
   try {

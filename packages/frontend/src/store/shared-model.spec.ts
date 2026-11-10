@@ -10,7 +10,7 @@ const strips = { Perf: [100, 50], Payoff: [], REO: [], NPL: [] };
 const loan = (row: number, id: string, fade: number) => ({ row, values: { A: id, AJ: fade, Y: 200000, L: 'CA' }, strips });
 const snapshot: Snapshot = {
   loans: [loan(17, '1001', 0.2), loan(18, '1002', 0.3)],
-  assumptions: {}, monthEnds: [], recalcMs: 0,
+  assumptions: {}, constants: {}, monthEnds: [], recalcMs: 0,
   overrides: [{ row: 18, col: 'AJ', value: 0.3, modelValue: 0.15 }],
 };
 const user = { name: 'Ashok G', email: 'ashok.g@indium.tech' };
