@@ -65,14 +65,11 @@
   --color-gridline: #e6e6e6;
   --color-override: #fff4ce; /* cells a user has overridden */
   --color-override-foreground: #8a5300;
-  /* GITSIT brand (gitsitusa.com) — homepage2 */
-  --color-gitsit-blue: #005da4; /* hero, active controls */
-  --color-gitsit-navy: #003a68; /* hero gradient end */
-  --color-gitsit-green: #71bf44; /* ring motif, accents (decorative, not text) */
-  --color-gitsit-green-ink: #3d7a1c; /* green text and icons on light surfaces */
-  --color-gitsit-slate: #33373d; /* headings */
-  --color-gitsit-mist: #eef4fa; /* page wash under the hero */
-  --color-on-brand: #ffffff; /* text on the blue hero */
+  /* Home page tables, styled as the Model sheet (Excel has no dark mode, so neither do these) */
+  --color-sheet: #ffffff;
+  --color-sheet-foreground: #000000;
+  --color-sheet-grid: #d4d4d4; /* Excel's gridlines */
+  --color-sheet-hover: #e8eef7;
 
   --radius-none: 0;
   --radius-sm: 2px;
@@ -145,8 +142,7 @@
     'Segoe UI', 'Segoe UI Web (West European)',
     /* body text, labels, UI controls */ -apple-system, BlinkMacSystemFont,
     Roboto, 'Helvetica Neue', sans-serif;
-  --font-brand-heading: 'PT Sans', 'Segoe UI', sans-serif; /* GITSIT headings (homepage2) */
-  --font-brand: 'Open Sans', 'Segoe UI', sans-serif; /* GITSIT body text (homepage2) */
+  --font-sheet: Calibri, Carlito, 'Segoe UI', sans-serif; /* the Model sheet's font (Home tables) */
   --font-monospace:
     Consolas, 'Courier New', Courier, monospace; /* code, pre-formatted text */
   --font-numeric:
@@ -220,13 +216,6 @@
     --color-gridline: #3a3d44;
     --color-override: #463100;
     --color-override-foreground: #ffd96b;
-    --color-gitsit-blue: #0b4f86;
-    --color-gitsit-navy: #06243f;
-    --color-gitsit-green: #71bf44;
-    --color-gitsit-green-ink: #8fd166;
-    --color-gitsit-slate: #e6e9ee;
-    --color-gitsit-mist: #1b1d22;
-    --color-on-brand: #ffffff;
   }
 }
 

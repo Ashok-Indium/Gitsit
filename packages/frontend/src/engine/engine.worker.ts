@@ -3,6 +3,7 @@
 
 import { DetailedCellError, HyperFormula } from 'hyperformula';
 
+import MODEL_STYLES from './generated/model-styles.json';
 import templateText from './generated/model-template.json?raw';
 import { EXCEL_CONFIG, registerExcelFunctions } from './excel-functions.ts';
 import { colName, colNum, parseAddress } from './formula-text.ts';
@@ -37,8 +38,13 @@ function read(row: number, col: string): CellOut {
 }
 
 const stripCols = (start: string) => [...Array(STRIP_MONTHS).keys()].map((i) => colName(colNum(start) + i));
-/** The report's columns plus every Model column Loan_Model and Loan_Model_Monthly store. */
-const SNAPSHOT_COLS = [...new Set([...LOAN_COLS, ...MODEL_COLUMNS.map((c) => c.col), ...MONTHLY_SERIES.flatMap((s) => s.cols)])];
+/**
+ * The report's columns, every Model column Loan_Model and Loan_Model_Monthly store, and the columns
+ * the Home tables' Model-sheet conditional formats read.
+ */
+const SNAPSHOT_COLS = [...new Set([...LOAN_COLS, ...MODEL_COLUMNS.map((c) => c.col), ...MONTHLY_SERIES.flatMap((s) => s.cols), ...MODEL_STYLES.cols])];
+/** The assumptions, and the fixed cells those conditional formats compare with (e.g. AB1). */
+const SNAPSHOT_CELLS = [...new Set([...ASSUMPTION_CELLS, ...MODEL_STYLES.cells])];
 
 function snapshot(recalcMs: number): Snapshot {
   const loans = loanRows.map((row) => ({
@@ -48,7 +54,7 @@ function snapshot(recalcMs: number): Snapshot {
       s, stripCols(STRIPS[s]).map((c) => { const v = read(row, c); return typeof v === 'number' ? v : 0; }),
     ])) as Record<Scenario, number[]>,
   }));
-  const assumptions = Object.fromEntries(ASSUMPTION_CELLS.map((a) => {
+  const assumptions = Object.fromEntries(SNAPSHOT_CELLS.map((a) => {
     const { row, col } = parseAddress(a);
     return [a, out(hf!.getCellValue({ sheet: sheetId, row, col }))];
   }));

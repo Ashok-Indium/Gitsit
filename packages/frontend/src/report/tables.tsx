@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 
 import { pbiFormat } from './format';
 import { cfTotal, type Loan, type MeasureDef } from './measures';
+import { duplicatesOf, headerStyle, loanCellStyle, type SheetContext } from './sheet-style';
 
 export interface Editing {
   overrides: Map<string, Override>;
@@ -54,6 +55,10 @@ function modelText(label: string, v: CellOut, row: SheetRow = 'loan'): string {
 const th = 'border-b-2 border-visual-border px-200 py-100 align-bottom font-bold text-foreground';
 const td = 'border-b border-visual-border/60 px-200 py-100 whitespace-nowrap';
 const sumCell = 'border-b border-visual-border px-200 py-100 whitespace-nowrap bg-canvas';
+// Styled as the Model sheet: Excel's white grid, Calibri, and each cell's own colours.
+const sheetTh = 'border-b border-r border-b-sheet-foreground border-r-sheet-grid bg-sheet px-200 py-100 align-bottom font-normal';
+const sheetTd = 'border-b border-r border-sheet-grid px-200 py-100 whitespace-nowrap';
+const sheetSum = 'border-b border-r border-sheet-grid bg-sheet px-200 py-100 whitespace-nowrap';
 
 /** The Model sheet's Average and Total rows, shown above the header as on the sheet. */
 export interface SheetSummary {
@@ -62,13 +67,17 @@ export interface SheetSummary {
   note?: string;
 }
 
-/** A Power BI table visual over loans, with click-to-override cells for editable columns. */
-export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]', summary }: {
+/**
+ * A Power BI table visual over loans, with click-to-override cells for editable columns. Given the
+ * model's `sheet` snapshot, it is coloured as the Model sheet is, conditional formats included.
+ */
+export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]', summary, sheet }: {
   columns: readonly string[];
   loans: Loan[];
   editing: Editing;
   maxHeight?: string;
   summary?: SheetSummary;
+  sheet?: Snapshot;
 }) {
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 } | null>(null);
   const rows = useMemo(() => {
@@ -78,21 +87,33 @@ export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]',
       return (x < y ? -1 : x > y ? 1 : 0) * sort.dir;
     });
   }, [loans, sort]);
+  // The sheet's rules see every loan in the file, as on the sheet, whatever the filters show.
+  const context = useMemo<SheetContext | null>(() => {
+    if (!sheet) return null;
+    const dups = new Map<string, Set<string>>();
+    return {
+      snapshot: sheet, overrides: editing.overrides,
+      duplicates: (col) => dups.get(col) ?? dups.set(col, duplicatesOf(sheet.loans, col)).get(col)!,
+    };
+  }, [sheet, editing.overrides]);
   const toggle = (col: string) => setSort((s) => (s?.col === col ? (s.dir === 1 ? { col, dir: -1 } : null) : { col, dir: 1 }));
 
   if (!loans.length) return <p className="py-800 text-center text-300 text-muted-foreground">No loans match the current filters.</p>;
+  const styled = !!context;
+  const firstCol = FIELD_BY_LABEL[columns[0]]?.col;
   return (
-    <div className={cn('overflow-auto', maxHeight)}>
+    <div className={cn('overflow-auto', maxHeight, styled && 'bg-sheet font-sheet text-sheet-foreground')}>
       <table className="min-w-full border-separate border-spacing-0 text-200">
-        <thead className="sticky top-0 z-10 bg-card">
+        <thead className={cn('sticky top-0 z-10', styled ? 'bg-sheet' : 'bg-card')}>
           {summary && (['average', 'total'] as const).map((kind) => (
-            <tr key={kind} className={cn(kind === 'total' && 'font-bold')}>
+            <tr key={kind} className={cn(!styled && kind === 'total' && 'font-bold')}>
               {columns.map((c, i) => {
                 if (i === 0) {
                   return (
-                    <th key={c} scope="row" className={cn(sumCell, 'sticky left-0 z-10 text-left text-title')}>
+                    <th key={c} scope="row" style={styled ? headerStyle(firstCol, kind) : undefined}
+                      className={cn(styled ? cn(sheetSum, 'font-normal') : cn(sumCell, 'text-title'), 'sticky left-0 z-10 text-left')}>
                       {kind === 'total' ? 'Total' : 'Average'}
-                      {summary.note && <span className="ml-100 font-normal text-muted-foreground">({summary.note})</span>}
+                      {summary.note && <span className={cn('ml-100 font-normal', styled ? 'opacity-75' : 'text-muted-foreground')}>({summary.note})</span>}
                     </th>
                   );
                 }
@@ -100,7 +121,8 @@ export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]',
                 const v = f ? summary.values[kind][f.col] : null;
                 // Blank where the sheet has nothing or an error (#DIV/0!, #VALUE!).
                 return (
-                  <td key={c} className={cn(sumCell, fmtOf(c) ? 'text-right tabular-nums' : 'text-left')}>
+                  <td key={c} style={styled ? headerStyle(f?.col, kind) : undefined}
+                    className={cn(styled ? sheetSum : sumCell, fmtOf(c) ? 'text-right tabular-nums' : 'text-left')}>
                     {v == null || v === '' || isError(v) || (typeof v === 'number' && !Number.isFinite(v)) ? '' : modelText(c, v, kind)}
                   </td>
                 );
@@ -113,11 +135,12 @@ export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]',
               const numeric = !!fmtOf(c);
               return (
                 <th key={c} scope="col" aria-sort={sort?.col === c ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}
-                  className={cn(th, numeric ? 'text-right' : 'text-left', i === 0 && 'sticky left-0 z-10 bg-card')}>
+                  style={styled ? headerStyle(f?.col, 'header') : undefined}
+                  className={cn(styled ? sheetTh : th, numeric ? 'text-right' : 'text-left', i === 0 && cn('sticky left-0 z-10', !styled && 'bg-card'))}>
                   <button type="button" onClick={() => toggle(c)}
                     className={cn('inline-flex max-w-40 items-end gap-100 whitespace-normal rounded-sm text-balance hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring', numeric && 'flex-row-reverse text-right')}>
                     <span>{c}</span>
-                    {f?.editable && <PencilLine aria-label="editable" className="icon-size-100 shrink-0 text-primary" />}
+                    {f?.editable && <PencilLine aria-label="editable" className={cn('icon-size-100 shrink-0', !styled && 'text-primary')} />}
                     {sort?.col === c && (sort.dir === 1 ? <ArrowUp className="icon-size-100 shrink-0" /> : <ArrowDown className="icon-size-100 shrink-0" />)}
                   </button>
                 </th>
@@ -127,24 +150,26 @@ export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]',
         </thead>
         <tbody>
           {rows.map((l) => (
-            <tr key={l.row} className="hover:bg-hover">
+            <tr key={l.row} className={styled ? 'hover:bg-sheet-hover' : 'hover:bg-hover'}>
               {columns.map((c, i) => {
                 const f = FIELD_BY_LABEL[c];
                 const v = cellOf(l, c);
                 const numeric = !!fmtOf(c);
+                const style = context ? loanCellStyle(f?.col, l, context) : undefined;
                 if (i === 0 && c === 'Loan ID') {
                   return (
-                    <td key={c} className={cn(td, 'sticky left-0 bg-card')}>
-                      <button type="button" className="font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        onClick={() => editing.onOpenLoan(l.row)}>{String(v ?? '')}</button>
+                    <td key={c} style={style} className={cn(styled ? sheetTd : td, 'sticky left-0', styled ? !style?.backgroundColor && 'bg-sheet' : 'bg-card')}>
+                      <button type="button" onClick={() => editing.onOpenLoan(l.row)}
+                        className={cn('focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          styled ? 'underline decoration-dotted underline-offset-2 hover:decoration-solid' : 'font-semibold text-primary hover:underline')}>{String(v ?? '')}</button>
                     </td>
                   );
                 }
                 return (
-                  <td key={c} className={cn(td, numeric && 'text-right tabular-nums')}>
+                  <td key={c} style={style} className={cn(styled ? sheetTd : td, numeric && 'text-right tabular-nums')}>
                     {f?.editable ? (
                       <EditableValue field={f} value={v} override={editing.overrides.get(`${f.col}${l.row}`)} disabled={editing.busy}
-                        align={numeric ? 'right' : 'left'} format={(x) => modelText(c, x)}
+                        align={numeric ? 'right' : 'left'} format={(x) => modelText(c, x)} tone={styled ? 'sheet' : 'app'}
                         onCommit={(value) => editing.onCommit(l.row, f.col, value)}
                         onReset={() => editing.onReset(l.row, f.col)} />
                     ) : modelText(c, v)}
@@ -196,37 +221,41 @@ export function MeasureMatrix({ rowLabel, groups, all, measures }: {
 
 const CF_FMT = '#,##0;(#,##0)';
 
-/** Scenario cash flows: loans down, months 1-36 across, with totals. */
-export function CashFlowPivot({ loans, scenario }: { loans: Loan[]; scenario: Scenario }) {
+/**
+ * Scenario cash flows: loans down, months 1-36 across, with totals. `sheet` styles it as the
+ * Model sheet's cash-flow columns (plain month numbers, centred, over a white grid).
+ */
+export function CashFlowPivot({ loans, scenario, sheet }: { loans: Loan[]; scenario: Scenario; sheet?: boolean }) {
   const months = [...Array(STRIP_MONTHS).keys()];
   const colTotals = months.map((m) => loans.reduce((s, l) => s + l.strips[scenario][m], 0));
   const grand = colTotals.reduce((a, b) => a + b, 0);
   if (!loans.length) return null;
+  const head = sheet ? sheetTh : th, cell = sheet ? sheetTd : td, pinned = sheet ? 'bg-sheet' : 'bg-card';
   return (
-    <div className="max-h-[40vh] overflow-auto">
+    <div className={cn('max-h-[40vh] overflow-auto', sheet && 'bg-sheet font-sheet text-sheet-foreground')}>
       <table className="min-w-full border-separate border-spacing-0 text-200 tabular-nums">
-        <thead className="sticky top-0 z-10 bg-card">
+        <thead className={cn('sticky top-0 z-10', pinned)}>
           <tr>
-            <th scope="col" className={cn(th, 'sticky left-0 z-10 bg-card text-left')}>Loan ID</th>
-            {months.map((m) => <th key={m} scope="col" className={cn(th, 'text-right')}>{m + 1}</th>)}
-            <th scope="col" className={cn(th, 'text-right')}>Total</th>
+            <th scope="col" style={sheet ? headerStyle('A', 'header') : undefined} className={cn(head, 'sticky left-0 z-10 text-left', pinned)}>Loan ID</th>
+            {months.map((m) => <th key={m} scope="col" className={cn(head, sheet ? 'text-center' : 'text-right')}>{m + 1}</th>)}
+            <th scope="col" className={cn(head, 'text-right', sheet && 'font-bold')}>Total</th>
           </tr>
         </thead>
         <tbody>
           {loans.map((l) => {
             const s = l.strips[scenario];
             return (
-              <tr key={l.row} className="hover:bg-hover">
-                <th scope="row" className={cn(td, 'sticky left-0 bg-card text-left font-normal')}>{String(l.values.A ?? '')}</th>
-                {s.map((v, m) => <td key={m} className={cn(td, 'text-right')}>{v ? pbiFormat(v, CF_FMT) : ''}</td>)}
-                <td className={cn(td, 'text-right font-semibold')}>{pbiFormat(s.reduce((a, b) => a + b, 0), CF_FMT)}</td>
+              <tr key={l.row} className={sheet ? 'hover:bg-sheet-hover' : 'hover:bg-hover'}>
+                <th scope="row" className={cn(cell, 'sticky left-0 text-left font-normal', pinned)}>{String(l.values.A ?? '')}</th>
+                {s.map((v, m) => <td key={m} className={cn(cell, 'text-right')}>{v ? pbiFormat(v, CF_FMT) : ''}</td>)}
+                <td className={cn(cell, 'text-right font-semibold')}>{pbiFormat(s.reduce((a, b) => a + b, 0), CF_FMT)}</td>
               </tr>
             );
           })}
           <tr className="font-bold">
-            <th scope="row" className={cn(td, 'sticky left-0 border-t-2 bg-card text-left')}>Total</th>
-            {colTotals.map((v, m) => <td key={m} className={cn(td, 'border-t-2 text-right')}>{v ? pbiFormat(v, CF_FMT) : ''}</td>)}
-            <td className={cn(td, 'border-t-2 text-right')}>{pbiFormat(grand, CF_FMT)}</td>
+            <th scope="row" className={cn(cell, 'sticky left-0 border-t-2 text-left', pinned)}>Total</th>
+            {colTotals.map((v, m) => <td key={m} className={cn(cell, 'border-t-2 text-right')}>{v ? pbiFormat(v, CF_FMT) : ''}</td>)}
+            <td className={cn(cell, 'border-t-2 text-right')}>{pbiFormat(grand, CF_FMT)}</td>
           </tr>
         </tbody>
       </table>

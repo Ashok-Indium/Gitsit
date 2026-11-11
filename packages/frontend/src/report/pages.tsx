@@ -12,7 +12,6 @@ import { cn } from '@/lib/utils';
 import { ConstraintsPage, type ConstraintsChoice } from './constraints';
 import { EditFieldsPage } from './edit-fields';
 import { ALL_SECTION_COLUMNS, applyFilters, LINKS, optionsOf, SECTIONS, sheetSummary, type Filters, type SectionId } from './home-sections';
-import { Homepage2 } from './homepage2';
 import { BarChart, DistributionChart, type Series } from './charts';
 import { pbiAuto, pbiFormat } from './format';
 import { binLoans, cumulative, HISTOGRAMS, type HistogramDef } from './histograms';
@@ -120,12 +119,13 @@ export function HomePage({ snapshot, editing, filters, setFilters, navigate, fil
       </div>
       <div className="flex flex-col gap-300 px-300">
         <VisualFrame title={s.label}>
+          {/* Coloured as the Model sheet. */}
           <LoanTable columns={s.columns} loans={loans} editing={editing} maxHeight={'scenario' in s ? 'max-h-[38vh]' : 'max-h-[62vh]'}
-            summary={sheetSummary(snapshot, loans.length)} />
+            summary={sheetSummary(snapshot, loans.length)} sheet={snapshot} />
         </VisualFrame>
         {'scenario' in s && (
           <VisualFrame title={`${s.scenario} Cash Flows by Month`}>
-            <CashFlowPivot loans={loans} scenario={s.scenario} />
+            <CashFlowPivot loans={loans} scenario={s.scenario} sheet />
           </VisualFrame>
         )}
       </div>
@@ -322,7 +322,7 @@ export function AssumptionsPage({ snapshot, editing }: PageProps) {
 // ---------- page registry ----------
 
 export type PageId =
-  | 'home' | 'homepage2' | 'bidSummary' | 'stratification' | 'exits' | 'mix' | 'loanDetail' | 'assumptions' | 'edit_fields' | 'constraints'
+  | 'home' | 'bidSummary' | 'stratification' | 'exits' | 'mix' | 'loanDetail' | 'assumptions' | 'edit_fields' | 'constraints'
   | 'h-sellerValue' | 'h-sellerUpb' | 'h-totalUpb' | 'h-assetValue' | 'h-assetMm' | 'h-ltv' | 'h-dtv'
   | 'h-monthsDq' | 'h-seasoned' | 'h-rate' | 'h-pi' | 'h-origYear' | 'h-payersYtm';
 
@@ -340,8 +340,6 @@ const hist = (id: PageId, def: HistogramDef, title = def.title, combined?: 'upb'
 /** Pages in the report's order. */
 export const PAGES: PageDef[] = [
   { id: 'home', title: 'Home Page', group: 'main', filterGroup: 'home', render: (p) => <HomePage {...p} /> },
-  // The Home page in the GITSIT brand (gitsitusa.com), sharing its filters.
-  { id: 'homepage2', title: 'homepage2', group: 'main', filterGroup: 'home', render: (p) => <Homepage2 {...p} /> },
   hist('h-sellerValue', HISTOGRAMS.sellerValue),
   hist('h-sellerUpb', HISTOGRAMS.sellerValue, 'Seller Value & Total UPB Distribution', 'upb'),
   hist('h-totalUpb', HISTOGRAMS.totalUpb),

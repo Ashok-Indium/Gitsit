@@ -1,0 +1,5096 @@
+{
+ "columns": {
+  "A": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#0000FF",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF"
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF"
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "duplicate": true,
+     "style": {
+      "fill": "#FFC7CE",
+      "color": "#9C0006"
+     }
+    },
+    {
+     "duplicate": true,
+     "style": {
+      "fill": "#FFC7CE",
+      "color": "#9C0006"
+     }
+    },
+    {
+     "duplicate": true,
+     "style": {
+      "fill": "#C00000",
+      "color": "#FFFF00",
+      "bold": true,
+      "italic": true
+     }
+    },
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "J",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 1
+        }
+       },
+       {
+        "n": 0
+       },
+       {
+        "fn": "IF",
+        "args": [
+         {
+          "fn": "ISBLANK",
+          "args": [
+           {
+            "ref": {
+             "col": "B",
+             "row": "loan"
+            }
+           }
+          ]
+         },
+         {
+          "n": 1
+         },
+         {
+          "n": 0
+         }
+        ]
+       }
+      ]
+     },
+     "style": {
+      "fill": "#E6B9B8",
+      "color": "#953735"
+     }
+    },
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "<>",
+        "a": {
+         "ref": {
+          "col": "Q",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 0
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FCD5B5",
+      "color": "#E46C0A"
+     }
+    },
+    {
+     "duplicate": true,
+     "style": {
+      "fill": "#C00000",
+      "color": "#FFFF00",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "F": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#0000FF",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#F2DCDB",
+    "color": "#000000"
+   }
+  },
+  "J": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FF0000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "J",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 1
+        }
+       },
+       {
+        "n": 0
+       },
+       {
+        "fn": "IF",
+        "args": [
+         {
+          "fn": "ISBLANK",
+          "args": [
+           {
+            "ref": {
+             "col": "B",
+             "row": "loan"
+            }
+           }
+          ]
+         },
+         {
+          "n": 1
+         },
+         {
+          "n": 0
+         }
+        ]
+       }
+      ]
+     },
+     "style": {
+      "fill": "#E6B9B8",
+      "color": "#953735"
+     }
+    },
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "<>",
+        "a": {
+         "ref": {
+          "col": "Q",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 0
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FCD5B5",
+      "color": "#E46C0A"
+     }
+    }
+   ]
+  },
+  "K": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "L": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "M": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#00B050"
+   }
+  },
+  "N": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "J",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 1
+        }
+       },
+       {
+        "n": 0
+       },
+       {
+        "fn": "IF",
+        "args": [
+         {
+          "fn": "ISBLANK",
+          "args": [
+           {
+            "ref": {
+             "col": "B",
+             "row": "loan"
+            }
+           }
+          ]
+         },
+         {
+          "n": 1
+         },
+         {
+          "n": 0
+         }
+        ]
+       }
+      ]
+     },
+     "style": {
+      "fill": "#E6B9B8",
+      "color": "#953735"
+     }
+    },
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "<>",
+        "a": {
+         "ref": {
+          "col": "Q",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 0
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FCD5B5",
+      "color": "#E46C0A"
+     }
+    }
+   ]
+  },
+  "O": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "P": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "R": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "<>",
+      "a": {
+       "ref": {
+        "col": "R",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "O",
+        "row": "loan"
+       }
+      }
+     },
+     "style": {
+      "color": "#FF0000"
+     }
+    }
+   ]
+  },
+  "S": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "T": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "U": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "V": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "W": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "=",
+      "a": {
+       "ref": {
+        "col": "W",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "AL",
+        "row": "loan"
+       }
+      }
+     },
+     "style": {
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "X": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "Y": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "Z": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "AA": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "AB": {
+   "header": {
+    "fill": "#D9D9D9"
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": ">",
+      "a": {
+       "ref": {
+        "col": "AB",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "cell": "AB1"
+       }
+      }
+     },
+     "style": {
+      "fill": "#FFFF99",
+      "color": "#E46C0A"
+     }
+    }
+   ]
+  },
+  "AC": {
+   "header": {
+    "fill": "#D9D9D9"
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AD": {
+   "header": {
+    "fill": "#D9D9D9"
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AE": {
+   "header": {
+    "fill": "#D9D9D9"
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AF": {
+   "header": {
+    "fill": "#D9D9D9"
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AG": {
+   "header": {
+    "fill": "#D9D9D9"
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AH": {
+   "header": {
+    "fill": "#D9D9D9"
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AI": {
+   "header": {
+    "fill": "#D9D9D9"
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AJ": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AJ",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AK": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "=",
+      "a": {
+       "ref": {
+        "col": "AK",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "AL",
+        "row": "loan"
+       }
+      }
+     },
+     "style": {
+      "bold": true,
+      "italic": true
+     }
+    },
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AK",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AL": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#DBEEF4",
+    "bold": true
+   }
+  },
+  "AM": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "AN": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AO": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AP": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AQ": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#00B050"
+   }
+  },
+  "AR": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "AS": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#00B050",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "IP": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#8064A2",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "HZ": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "color": "#8064A2",
+    "bold": true
+   },
+   "total": {
+    "color": "#8064A2",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AV": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "scale": [
+      {
+       "at": 0,
+       "color": "#FCFCFF"
+      },
+      {
+       "at": 120,
+       "color": "#63BE7B"
+      }
+     ]
+    }
+   ]
+  },
+  "AW": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "scale": [
+      {
+       "at": 0,
+       "color": "#FCFCFF"
+      },
+      {
+       "at": 120,
+       "color": "#63BE7B"
+      }
+     ]
+    }
+   ]
+  },
+  "GL": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#8064A2",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   }
+  },
+  "AY": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "AZ": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "bold": true,
+    "italic": true
+   }
+  },
+  "BA": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "bold": true,
+    "italic": true
+   }
+  },
+  "BB": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "bold": true,
+    "italic": true
+   }
+  },
+  "BC": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "bold": true,
+    "italic": true
+   }
+  },
+  "BD": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "italic": true
+   }
+  },
+  "BE": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "italic": true
+   }
+  },
+  "BF": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "italic": true
+   }
+  },
+  "BG": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "italic": true
+   }
+  },
+  "BH": {
+   "header": {
+    "fill": "#FFC000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "BI": {
+   "header": {
+    "fill": "#FFC000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "BJ": {
+   "header": {
+    "fill": "#FFC000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "BK": {
+   "header": {
+    "fill": "#FFC000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "BL": {
+   "header": {
+    "fill": "#FFC000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "BM": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#F2F2F2",
+    "color": "#000000"
+   },
+   "total": {
+    "fill": "#F2F2F2",
+    "color": "#000000"
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   }
+  },
+  "BN": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "BN",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "BO": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "BO",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "BP": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "BP",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "BQ": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "BQ",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "BR": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#FF0000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": ">",
+      "a": {
+       "ref": {
+        "col": "BR",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "BR",
+        "row": "average"
+       }
+      }
+     },
+     "style": {
+      "color": "#FF0000"
+     }
+    }
+   ]
+  },
+  "BS": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#FF0000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": ">",
+      "a": {
+       "ref": {
+        "col": "BS",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "BS",
+        "row": "average"
+       }
+      }
+     },
+     "style": {
+      "color": "#FF0000"
+     }
+    },
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "W",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "ref": {
+          "col": "AL",
+          "row": "loan"
+         }
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "BT": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#FF0000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": ">",
+      "a": {
+       "ref": {
+        "col": "BT",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "BT",
+        "row": "average"
+       }
+      }
+     },
+     "style": {
+      "color": "#FF0000"
+     }
+    }
+   ]
+  },
+  "BU": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#FF0000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": ">",
+      "a": {
+       "ref": {
+        "col": "BU",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "BU",
+        "row": "average"
+       }
+      }
+     },
+     "style": {
+      "color": "#FF0000"
+     }
+    }
+   ]
+  },
+  "BV": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#FF0000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": ">",
+      "a": {
+       "ref": {
+        "col": "BV",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "BV",
+        "row": "average"
+       }
+      }
+     },
+     "style": {
+      "color": "#FF0000"
+     }
+    },
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "AK",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "ref": {
+          "col": "AL",
+          "row": "loan"
+         }
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "BW": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#FF0000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": ">",
+      "a": {
+       "ref": {
+        "col": "BW",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "BW",
+        "row": "average"
+       }
+      }
+     },
+     "style": {
+      "color": "#FF0000"
+     }
+    },
+    {
+     "scale": [
+      {
+       "at": 0.45,
+       "color": "#63BE7B"
+      },
+      {
+       "at": 0.65,
+       "color": "#FCFCFF"
+      },
+      {
+       "at": 0.85,
+       "color": "#F8696B"
+      }
+     ]
+    }
+   ]
+  },
+  "BX": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "scale": [
+      {
+       "at": 10000,
+       "color": "#F8696B"
+      },
+      {
+       "at": 40000,
+       "color": "#FCFCFF"
+      },
+      {
+       "at": 70000,
+       "color": "#63BE7B"
+      }
+     ]
+    }
+   ]
+  },
+  "CC": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "<>",
+      "a": {
+       "ref": {
+        "col": "CC",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "cell": "CC1"
+       }
+      }
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF"
+     }
+    }
+   ]
+  },
+  "CD": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "<>",
+      "a": {
+       "ref": {
+        "col": "CD",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "cell": "CD1"
+       }
+      }
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF"
+     }
+    }
+   ]
+  },
+  "CE": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#DBEEF4",
+    "color": "#0000FF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "BH",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "s": "-"
+        }
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "color": "#FF0000"
+     }
+    }
+   ]
+  },
+  "CF": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#DBEEF4",
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "CF",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "CG": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#DBEEF4",
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "CG",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "CH": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#DBEEF4",
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "CH",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "CI": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "CI",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    },
+    {
+     "if": {
+      "op": "<",
+      "a": {
+       "ref": {
+        "col": "CI",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "n": 0
+      }
+     },
+     "style": {
+      "fill": "#C00000",
+      "color": "#FFFFFF"
+     }
+    }
+   ]
+  },
+  "CJ": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "CJ",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "CK": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#DBEEF4",
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "CK",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "CL": {
+   "header": {
+    "fill": "#F2F2F2",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "CL",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "CX": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#0000FF",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF"
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "italic": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "CX",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "CY": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF"
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "CY",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "CZ": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF"
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "IA": {
+   "header": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "average": {
+    "color": "#8064A2",
+    "bold": true
+   },
+   "total": {
+    "color": "#8064A2",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "<=",
+      "a": {
+       "ref": {
+        "col": "IA",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "n": 0
+      }
+     },
+     "style": {
+      "fill": "#C00000",
+      "color": "#FFFF00"
+     }
+    }
+   ]
+  },
+  "DC": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF"
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   }
+  },
+  "DD": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "DE": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "DF": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   }
+  },
+  "DL": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "DL",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    },
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "CX",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 0
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "color": "#A6A6A6",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "DM": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "CX",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 0
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "color": "#A6A6A6",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "DN": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "CX",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 0
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "color": "#A6A6A6",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "DP": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "CX",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 0
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "color": "#A6A6A6",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "DU": {
+   "header": {
+    "fill": "#C3D69B",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#000000",
+    "color": "#FFFFFF",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "op": "=",
+        "a": {
+         "ref": {
+          "col": "CX",
+          "row": "loan"
+         }
+        },
+        "b": {
+         "n": 0
+        }
+       },
+       {
+        "n": 1
+       },
+       {
+        "n": 0
+       }
+      ]
+     },
+     "style": {
+      "color": "#A6A6A6",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "TF": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#0000FF"
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "fill": "#F2F2F2",
+    "color": "#0000FF"
+   }
+  },
+  "TG": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#0000FF"
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "fill": "#F2F2F2",
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "NOT",
+      "args": [
+       {
+        "fn": "ISERROR",
+        "args": [
+         {
+          "fn": "SEARCH",
+          "args": [
+           {
+            "s": " "
+           },
+           {
+            "ref": {
+             "col": "TG",
+             "row": "loan"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FF0000",
+      "color": "#000000"
+     }
+    }
+   ]
+  },
+  "TH": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#0000FF"
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "fill": "#F2F2F2",
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "NOT",
+      "args": [
+       {
+        "fn": "ISERROR",
+        "args": [
+         {
+          "fn": "SEARCH",
+          "args": [
+           {
+            "s": " "
+           },
+           {
+            "ref": {
+             "col": "TH",
+             "row": "loan"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FF0000",
+      "color": "#000000"
+     }
+    }
+   ]
+  },
+  "TI": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#0000FF"
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "fill": "#F2F2F2",
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "NOT",
+      "args": [
+       {
+        "fn": "ISERROR",
+        "args": [
+         {
+          "fn": "SEARCH",
+          "args": [
+           {
+            "s": " "
+           },
+           {
+            "ref": {
+             "col": "TI",
+             "row": "loan"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FF0000",
+      "color": "#000000"
+     }
+    }
+   ]
+  },
+  "TJ": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#0000FF"
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "fill": "#F2F2F2",
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "NOT",
+      "args": [
+       {
+        "fn": "ISERROR",
+        "args": [
+         {
+          "fn": "SEARCH",
+          "args": [
+           {
+            "s": " "
+           },
+           {
+            "ref": {
+             "col": "TJ",
+             "row": "loan"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FF0000",
+      "color": "#000000"
+     }
+    }
+   ]
+  },
+  "QG": {
+   "header": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "bold": true
+   }
+  },
+  "AAR": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AAR",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AAT": {
+   "header": {
+    "fill": "#FFFF00",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "<>",
+      "a": {
+       "ref": {
+        "col": "AAT",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "op": "+",
+       "a": {
+        "op": "/",
+        "a": {
+         "op": "*",
+         "a": {
+          "op": "-",
+          "a": {
+           "ref": {
+            "col": "AAS",
+            "row": "loan"
+           }
+          },
+          "b": {
+           "n": 1
+          }
+         },
+         "b": {
+          "ref": {
+           "col": "AAR",
+           "row": "loan"
+          }
+         }
+        },
+        "b": {
+         "n": 12
+        }
+       },
+       "b": {
+        "n": 1
+       }
+      }
+     },
+     "style": {
+      "fill": "#FCD5B5"
+     }
+    }
+   ]
+  },
+  "QH": {
+   "header": {
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "QK": {
+   "header": {
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AAW": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000",
+    "italic": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   }
+  },
+  "AAZ": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000"
+   },
+   "average": {
+    "color": "#000000",
+    "italic": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "color": "#000000"
+   }
+  },
+  "BGS": {
+   "header": {
+    "color": "#000000"
+   },
+   "average": {
+    "color": "#0000FF"
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "OX": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   }
+  },
+  "QB": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   }
+  },
+  "PS": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "ACY": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "ACY",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    },
+    {
+     "if": {
+      "op": "=",
+      "a": {
+       "ref": {
+        "col": "ACY",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "ref": {
+        "col": "ACY",
+        "row": "average"
+       }
+      }
+     },
+     "style": {
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "ACZ": {
+   "header": {
+    "color": "#000000"
+   },
+   "average": {
+    "fill": "#EBF1DE",
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "ACZ",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "ADA": {
+   "header": {
+    "color": "#000000"
+   },
+   "average": {
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "ADA",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "ADB": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "ADB",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "ADC": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "ADC",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "ADD": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#00B050"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "ADD",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "ADE": {
+   "header": {
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "ADE",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "ADM": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "bold": true
+   }
+  },
+  "ADN": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "bold": true
+   }
+  },
+  "ADI": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#00B050"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "ADI",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "ADK": {
+   "header": {
+    "fill": "#FFFF00",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "<>",
+      "a": {
+       "ref": {
+        "col": "ADK",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "op": "+",
+       "a": {
+        "op": "/",
+        "a": {
+         "op": "*",
+         "a": {
+          "op": "-",
+          "a": {
+           "ref": {
+            "col": "ADJ",
+            "row": "loan"
+           }
+          },
+          "b": {
+           "n": 1
+          }
+         },
+         "b": {
+          "ref": {
+           "col": "ADI",
+           "row": "loan"
+          }
+         }
+        },
+        "b": {
+         "n": 12
+        }
+       },
+       "b": {
+        "n": 1
+       }
+      }
+     },
+     "style": {
+      "fill": "#FCD5B5"
+     }
+    }
+   ]
+  },
+  "ADL": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000",
+    "italic": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   }
+  },
+  "ADQ": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000"
+   },
+   "average": {
+    "color": "#000000",
+    "italic": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "color": "#000000"
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "color": "#000000"
+   }
+  },
+  "ADW": {
+   "header": {
+    "color": "#000000"
+   },
+   "average": {
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "ADW",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFP": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFP",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFQ": {
+   "header": {
+    "color": "#000000"
+   },
+   "average": {
+    "fill": "#EBF1DE",
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFQ",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFR": {
+   "header": {
+    "color": "#000000"
+   },
+   "average": {
+    "fill": "#EBF1DE",
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFR",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFS": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFS",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFT": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFT",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFU": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFU",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFV": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFV",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFW": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFW",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFX": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFX",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AFY": {
+   "header": {
+    "color": "#000000"
+   },
+   "average": {
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#0000FF"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AFY",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AGA": {
+   "header": {
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AGA",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AGI": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "bold": true
+   }
+  },
+  "AGJ": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "bold": true
+   }
+  },
+  "AGE": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "color": "#00B050"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AGE",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AGG": {
+   "header": {
+    "fill": "#FFFF00",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "<>",
+      "a": {
+       "ref": {
+        "col": "AGG",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "op": "+",
+       "a": {
+        "op": "/",
+        "a": {
+         "op": "*",
+         "a": {
+          "op": "-",
+          "a": {
+           "ref": {
+            "col": "AGF",
+            "row": "loan"
+           }
+          },
+          "b": {
+           "n": 1
+          }
+         },
+         "b": {
+          "ref": {
+           "col": "AGE",
+           "row": "loan"
+          }
+         }
+        },
+        "b": {
+         "n": 12
+        }
+       },
+       "b": {
+        "n": 1
+       }
+      }
+     },
+     "style": {
+      "fill": "#FCD5B5"
+     }
+    }
+   ]
+  },
+  "AGH": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000",
+    "italic": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   }
+  },
+  "AGS": {
+   "header": {
+    "color": "#000000"
+   },
+   "average": {
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AGS",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AIO": {
+   "header": {
+    "color": "#000000"
+   },
+   "average": {
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#00B050"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AIO",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AIP": {
+   "header": {
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AIP",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AIX": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "bold": true
+   }
+  },
+  "AIY": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#0000FF",
+    "bold": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "bold": true
+   }
+  },
+  "AIT": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "color": "#000000"
+   },
+   "rules": [
+    {
+     "if": {
+      "fn": "IF",
+      "args": [
+       {
+        "fn": "ISFORMULA",
+        "args": [
+         {
+          "ref": {
+           "col": "AIT",
+           "row": "loan"
+          }
+         }
+        ]
+       },
+       {
+        "n": 0
+       },
+       {
+        "n": 1
+       }
+      ]
+     },
+     "style": {
+      "fill": "#FFFFCC",
+      "color": "#0000FF",
+      "bold": true,
+      "italic": true
+     }
+    }
+   ]
+  },
+  "AIU": {
+   "header": {
+    "color": "#000000"
+   },
+   "total": {
+    "color": "#000000"
+   },
+   "loan": {
+    "color": "#000000"
+   }
+  },
+  "AIV": {
+   "header": {
+    "fill": "#FFFF00",
+    "color": "#000000",
+    "bold": true
+   },
+   "total": {
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "color": "#000000",
+    "bold": true
+   },
+   "rules": [
+    {
+     "if": {
+      "op": "<>",
+      "a": {
+       "ref": {
+        "col": "AIV",
+        "row": "loan"
+       }
+      },
+      "b": {
+       "op": "+",
+       "a": {
+        "op": "/",
+        "a": {
+         "op": "*",
+         "a": {
+          "op": "-",
+          "a": {
+           "ref": {
+            "col": "AIU",
+            "row": "loan"
+           }
+          },
+          "b": {
+           "n": 1
+          }
+         },
+         "b": {
+          "ref": {
+           "col": "AIT",
+           "row": "loan"
+          }
+         }
+        },
+        "b": {
+         "n": 12
+        }
+       },
+       "b": {
+        "n": 1
+       }
+      }
+     },
+     "style": {
+      "fill": "#FCD5B5"
+     }
+    }
+   ]
+  },
+  "AIW": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "average": {
+    "color": "#000000",
+    "italic": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "color": "#000000",
+    "bold": true
+   }
+  },
+  "AJB": {
+   "header": {
+    "fill": "#D9D9D9",
+    "color": "#000000"
+   },
+   "average": {
+    "color": "#000000",
+    "italic": true
+   },
+   "total": {
+    "fill": "#D9D9D9",
+    "color": "#000000"
+   },
+   "loan": {
+    "fill": "#D9D9D9",
+    "color": "#000000"
+   }
+  }
+ },
+ "override": {
+  "fill": "#FFFFCC",
+  "color": "#0000FF",
+  "bold": true,
+  "italic": true
+ },
+ "cols": [
+  "AAR",
+  "AAS",
+  "AAT",
+  "AB",
+  "ACY",
+  "ACZ",
+  "ADA",
+  "ADB",
+  "ADC",
+  "ADD",
+  "ADE",
+  "ADI",
+  "ADJ",
+  "ADK",
+  "ADW",
+  "AFP",
+  "AFQ",
+  "AFR",
+  "AFS",
+  "AFT",
+  "AFU",
+  "AFV",
+  "AFW",
+  "AFX",
+  "AFY",
+  "AGA",
+  "AGE",
+  "AGF",
+  "AGG",
+  "AGS",
+  "AIO",
+  "AIP",
+  "AIT",
+  "AIU",
+  "AIV",
+  "AJ",
+  "AK",
+  "AL",
+  "B",
+  "BH",
+  "BN",
+  "BO",
+  "BP",
+  "BQ",
+  "BR",
+  "BS",
+  "BT",
+  "BU",
+  "BV",
+  "BW",
+  "CC",
+  "CD",
+  "CF",
+  "CG",
+  "CH",
+  "CI",
+  "CJ",
+  "CK",
+  "CL",
+  "CX",
+  "CY",
+  "DL",
+  "IA",
+  "J",
+  "O",
+  "Q",
+  "R",
+  "TG",
+  "TH",
+  "TI",
+  "TJ",
+  "W"
+ ],
+ "cells": [
+  "AB1",
+  "CC1",
+  "CD1"
+ ]
+}

@@ -17,12 +17,16 @@ interface EditableValueProps {
   onReset: () => void;
   /** How the value is shown; the report's format by default. */
   format?: (value: CellOut) => string;
+  /** 'sheet' inside a table styled as the Model sheet, whose cell shows the override's colours. */
+  tone?: 'app' | 'sheet';
 }
 
 /** A model value that turns into an input on click; overridden values are highlighted. */
-export function EditableValue({ field, value, override, disabled, align = 'right', onCommit, onReset, format }: EditableValueProps) {
+export function EditableValue({ field, value, override, disabled, align = 'right', onCommit, onReset, format, tone = 'app' }: EditableValueProps) {
   const [draft, setDraft] = useState<string | null>(null);
   const [invalid, setInvalid] = useState(false);
+  const sheet = tone === 'sheet';
+  const inputColors = sheet ? 'bg-sheet text-sheet-foreground' : 'bg-background';
   const show = format ?? ((v: CellOut) => pbiFormat(v, field.fmt));
   const display = show(value) || '–';
   const title = override ? `Model value: ${show(override.modelValue) || '–'}` : `Click to override ${field.label}`;
@@ -46,7 +50,7 @@ export function EditableValue({ field, value, override, disabled, align = 'right
       <select
         autoFocus
         aria-label={field.label}
-        className="w-full rounded-md border border-ring bg-background px-100 py-100-nudge text-200"
+        className={cn('w-full rounded-md border border-ring px-100 py-100-nudge text-200', inputColors)}
         value={draft}
         onChange={(e) => commit(e.target.value)}
         onBlur={() => setDraft(null)}
@@ -66,7 +70,7 @@ export function EditableValue({ field, value, override, disabled, align = 'right
         aria-label={field.label}
         aria-invalid={invalid}
         className={cn(
-          'w-full min-w-0 rounded-md border bg-background px-100 py-100-nudge text-200 tabular-nums outline-none',
+          'w-full min-w-0 rounded-md border px-100 py-100-nudge text-200 tabular-nums outline-none', inputColors,
           align === 'right' && 'text-right',
           invalid ? 'border-destructive' : 'border-ring',
         )}
@@ -86,7 +90,8 @@ export function EditableValue({ field, value, override, disabled, align = 'right
           type="button"
           title="Reset to model value"
           aria-label={`Reset ${field.label} to model value`}
-          className="rounded-sm p-100-nudge text-override-foreground opacity-70 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn('rounded-sm p-100-nudge opacity-70 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            !sheet && 'text-override-foreground')}
           disabled={disabled}
           onClick={(e) => { e.stopPropagation(); onReset(); }}
         >
@@ -98,8 +103,9 @@ export function EditableValue({ field, value, override, disabled, align = 'right
         title={title}
         disabled={disabled}
         className={cn(
-          'rounded-md px-100 py-100-nudge tabular-nums transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait',
-          override && 'bg-override font-semibold text-override-foreground hover:bg-override',
+          'rounded-md px-100 py-100-nudge tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait',
+          sheet ? 'hover:bg-black/10' : 'hover:bg-accent',
+          override && !sheet && 'bg-override font-semibold text-override-foreground hover:bg-override',
         )}
         onClick={(e) => { e.stopPropagation(); setDraft(field.kind === 'flag' ? String(value ? 1 : 0) : editText(value, field.kind)); }}
       >

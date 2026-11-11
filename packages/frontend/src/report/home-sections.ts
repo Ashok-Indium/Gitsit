@@ -1,5 +1,4 @@
-// What the Home page and homepage2 share: the related-report links, the Model Output / DCF
-// sections, and the slicer filtering.
+// The Home page's related-report links, Model Output / DCF sections, and the slicer filtering.
 
 import type { Snapshot } from '@/engine/protocol';
 import { REPORT_TABLES } from '@/engine/report-fields';

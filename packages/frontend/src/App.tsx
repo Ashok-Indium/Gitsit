@@ -149,10 +149,6 @@ function App() {
               className={cn(navItem, pageId === 'home' ? 'bg-tab-active text-tab-active-foreground' : 'hover:bg-accent')}>Home Page</button>
           </li>
           <li>
-            <button type="button" aria-current={pageId === 'homepage2' ? 'page' : undefined} onClick={() => go('homepage2')}
-              className={cn(navItem, pageId === 'homepage2' ? 'bg-tab-active text-tab-active-foreground' : 'hover:bg-accent')}>homepage2</button>
-          </li>
-          <li>
             <button type="button" aria-expanded={distOpen || page.group === 'distributions'} onClick={() => setDistOpen((o) => !o)}
               className={cn(navItem, 'hover:bg-accent')}>
               <BarChart3 className="icon-size-200 text-muted-foreground" /> Distributions
@@ -169,7 +165,7 @@ function App() {
               </ul>
             )}
           </li>
-          {main.filter((p) => p.id !== 'home' && p.id !== 'homepage2').map((p) => (
+          {main.filter((p) => p.id !== 'home').map((p) => (
             <li key={p.id}>
               <button type="button" aria-current={pageId === p.id ? 'page' : undefined} onClick={() => go(p.id)}
                 className={cn(navItem, pageId === p.id ? 'bg-tab-active text-tab-active-foreground' : 'hover:bg-accent')}>{p.title}</button>

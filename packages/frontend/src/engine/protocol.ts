@@ -25,7 +25,7 @@ export interface Override {
 
 export interface Snapshot {
   loans: LoanSnapshot[];
-  /** Assumption values by Model cell (e.g. CC1). */
+  /** Assumption values by Model cell (e.g. CC1), and the cells the Home tables' sheet colours compare with. */
   assumptions: Record<string, CellOut>;
   /** The Constraints page's values as the model holds them, by Model cell. */
   constants: Record<string, CellOut>;
