@@ -34,6 +34,8 @@ export interface InputLoans {
   constants: FileConstants;
   /** Records constants this app has just saved for a file, so they are not taken for someone else's change. */
   rememberConstants: (fileName: string, values: FileConstants) => void;
+  /** Why the model constants could not be read (every file calculates with the Model sheet's). */
+  constraintsError: string | null;
   /** Why Fabric's Input_table could not be read (the bundled input file is used instead). */
   error: string | null;
   /** Why the lookup tables could not be read (the workbook's own lookup values are used instead). */
@@ -62,7 +64,7 @@ function cellsOf(values: FileConstants | undefined): Constants {
  * changes every few minutes and on returning to the tab. The model is built from `fileName`'s
  * loans and constants, or the first file's when it is not in the table. The lookups come from
  * LookupCache, which triggers on the BPL_ tables in SQL fill, so the app only reads it; the constants
- * from ConstraintValues (Constraints.BPL_ConstraintValues in SQL).
+ * from Constraints.BPL_ConstraintValues, through the app's loadConstraints function.
  */
 export function useInputLoans(fileName: string | null): InputLoans {
   const [rows, setRows] = useState<InputRow[] | null>(null);
@@ -73,6 +75,7 @@ export function useInputLoans(fileName: string | null): InputLoans {
   const [fromFabric, setFromFabric] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
+  const [constraintsError, setConstraintsError] = useState<string | null>(null);
   const [updated, setUpdated] = useState(false);
   const loaded = useRef<string | null>(null);
 
@@ -106,7 +109,7 @@ export function useInputLoans(fileName: string | null): InputLoans {
         if (!cancelled) setLookupError(message(e));
       }
       // Without them every file calculates with the Model sheet's constants.
-      const constraints = await loadConstraints(client).catch(() => null);
+      const constraints = await loadConstraints(client).catch((e: unknown) => { if (!cancelled) setConstraintsError(message(e)); return null; });
       if (cancelled) return;
       loaded.current = inputFingerprint(all) + (read ? lookupsFingerprint(read) : '');
       setLookups(read);
@@ -163,6 +166,6 @@ export function useInputLoans(fileName: string | null): InputLoans {
 
   return {
     input, files, fileName: selected, constants: (selected && known.get(selected)) || NONE, rememberConstants,
-    error, lookupError, updated,
+    constraintsError, error, lookupError, updated,
   };
 }

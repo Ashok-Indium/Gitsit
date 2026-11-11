@@ -46,36 +46,6 @@ const CACHE = {
   ] as Column[],
 };
 
-/**
- * The model constants of each input file (one row per File_Name and Field_Index). People edit them
- * through the view Constraints.BPL_ConstraintValues (docs/bpl-constraints.sql); the app reads and writes
- * this table directly. (The data service can't write to a table with a trigger, so nothing here
- * relies on triggers on these tables.)
- */
-const CONSTRAINT_VALUES = {
-  table: 'ConstraintValues', entity: 'ConstraintValue', key: ['File_Name', 'Field_Index'], actions: ALL,
-  columns: [
-    { columnName: 'File_Name', dataType: 'nvarchar', isNullable: false, maxLength: 200 },
-    { columnName: 'Field_Index', dataType: 'nvarchar', isNullable: false, maxLength: 100 },
-    { columnName: 'Field_Name_Display', dataType: 'nvarchar', isNullable: false, maxLength: 200 },
-    { columnName: 'Value', dataType: 'nvarchar', isNullable: true, maxLength: 100 },
-  ] as Column[],
-};
-
-/** The log of the model constants the app's Constraints page applies (append-only). */
-const CONSTRAINT_LOG = {
-  table: 'ConstraintChanges', entity: 'ConstraintChange', key: ['File_Name', 'Field_Index', 'Changed_On'], actions: READ_CREATE,
-  columns: [
-    { columnName: 'File_Name', dataType: 'nvarchar', isNullable: false, maxLength: 200 },
-    { columnName: 'Field_Index', dataType: 'nvarchar', isNullable: false, maxLength: 100 },
-    { columnName: 'Field_Name_Display', dataType: 'nvarchar', isNullable: false, maxLength: 200 },
-    { columnName: 'Old_Value', dataType: 'nvarchar', isNullable: true, maxLength: 100 },
-    { columnName: 'New_Value', dataType: 'nvarchar', isNullable: true, maxLength: 100 },
-    { columnName: 'User_mail', dataType: 'nvarchar', isNullable: false, maxLength: 200 },
-    { columnName: 'Changed_On', dataType: 'datetime2', isNullable: false },
-  ] as Column[],
-};
-
 /** Each table: its entity class, natural key (what identifies a row to the app) and actions. */
 const TABLES: { table: string; entity: string; key: string[]; actions: string[]; numbers?: [number, number]; columns?: Column[] }[] = [
   // One input file's loans: the same loan ID may appear in another file.
@@ -87,11 +57,11 @@ const TABLES: { table: string; entity: string; key: string[]; actions: string[];
   { table: 'LoanChanges', entity: 'LoanChange', key: ['File_Name', 'Loan_Id', 'Column_Name', 'Changed_On'], actions: READ_CREATE },
   // The lookups are edited in the BPL_Lookups tables; the app reads them from this one table.
   CACHE,
-  CONSTRAINT_VALUES,
-  CONSTRAINT_LOG,
+  // (The model constants are in the Constraints schema, outside the data service's reach: the app's
+  // functions read and write them. See scripts/gen-constraints.ts.)
 ];
 /** Tables the app creates empty (nothing to move over, no view with an original name). */
-const NEW_TABLES = new Set(['LoanChanges', CACHE.table, CONSTRAINT_VALUES.table, CONSTRAINT_LOG.table]);
+const NEW_TABLES = new Set(['LoanChanges', CACHE.table]);
 
 const DEFAULTS: Record<string, string> = { Table_Type: 'BPL' };
 

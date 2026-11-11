@@ -1,20 +1,17 @@
-// Generates the Constraints views people set the model constants in, per input file, and the
-// defaults the app and the table start from (the Model sheet's own values).
+// Generates the Constraints tables people and the app set the model constants in, per input file,
+// and the defaults every file starts from (the Model sheet's own values).
 //
 //   node scripts/gen-constraints.ts
 //
 // Reads data/Pacific Private Money - model.xlsx and src/engine/constraint-fields.ts. Writes:
 //   src/engine/generated/constraint-defaults.json   (Field_Index -> the Model sheet's value)
-//   docs/bpl-constraints.sql                        (schema, views, defaults; safe to rerun)
+//   docs/bpl-constraints.sql                        (schema, tables, defaults; safe to rerun)
 //
-// How the pieces fit: the values are in the app's table dbo.ConstraintValues (one row per input
-// file and field), which the app reads and writes; people edit them through the view
-// Constraints.BPL_ConstraintValues, which leaves out the data service's id. The app logs every value
-// it applies in dbo.ConstraintChanges, shown as Constraints.BPL_ConstraintChanges. (The app's tables
-// have to be in dbo: the data service maps entities to dbo tables only.) Every input file gets the
-// defaults for the fields it has no row for: the files already loaded now, later ones when the
-// loader lists them in dbo.Input_files. (The data service can't write to a table that has a
-// trigger, so the app's tables have none.)
+// How the pieces fit: Constraints.BPL_ConstraintValues holds one row per input file and field and
+// Constraints.BPL_ConstraintChanges logs every value the app applies. The app's data service only
+// reaches dbo tables, so the app reads and writes these through its functions (packages/functions),
+// which run SQL. Every input file gets the defaults for the fields it has no row for: the files
+// already loaded now, later ones when the loader lists them in dbo.Input_files.
 
 import ExcelJS from 'exceljs';
 import { writeFileSync } from 'node:fs';
@@ -26,14 +23,13 @@ import { CONSTRAINT_FIELDS, constraintText } from '../src/engine/constraint-fiel
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../../..');
 const SCHEMA = 'Constraints';
-const VIEW = `[${SCHEMA}].[BPL_ConstraintValues]`;
-const CHANGES_VIEW = `[${SCHEMA}].[BPL_ConstraintChanges]`;
-/** What earlier versions called the values (a table, then a view). */
-const OLD = `[${SCHEMA}].[BPL_Constraints]`;
-const DEFAULTS = `[${SCHEMA}].[BPL_Constraints_Defaults]`;
-/** The app's tables (the data service's names). */
-const VALUES = 'dbo.[ConstraintValues]';
-const CHANGES = 'dbo.[ConstraintChanges]';
+const VALUES = `[${SCHEMA}].[BPL_ConstraintValues]`;
+const CHANGES = `[${SCHEMA}].[BPL_ConstraintChanges]`;
+/** Where earlier versions kept them: the app's dbo tables, and views or a table in the schema. */
+const OLD_VALUES = 'dbo.[ConstraintValues]';
+const OLD_CHANGES = 'dbo.[ConstraintChanges]';
+const OLD_VIEWS = ['BPL_ConstraintValues', 'BPL_ConstraintChanges', 'BPL_Constraints', 'BPL_Constraints_Defaults'].map((v) => `[${SCHEMA}].[${v}]`);
+const OLD_TABLE = `[${SCHEMA}].[BPL_Constraints]`;
 const CACHE = 'dbo.[LookupCaches]';
 const INPUT = 'dbo.[InputLoans]';
 const EXCEL_EPOCH = Date.UTC(1899, 11, 30);
@@ -56,48 +52,63 @@ async function main() {
   writeFileSync(resolve(here, '../src/engine/generated/constraint-defaults.json'), `${JSON.stringify(defaults, null, 2)}\n`);
 
   const cols = '[File_Name], [Field_Index], [Field_Name_Display], [Value]';
+  const changeCols = '[File_Name], [Field_Index], [Field_Name_Display], [Old_Value], [New_Value], [User_mail], [Changed_On]';
+  /** The Model sheet's own values, as a table expression. */
+  const defaultRows = `(VALUES
+${CONSTRAINT_FIELDS.map((f) => `    (${sql(f.index)}, ${sql(f.display)}, ${sql(defaults[f.index])})`).join(',\n')}
+  ) AS d ([Field_Index], [Field_Name_Display], [Value])`;
   /** Rows for the given files (a query with a File_Name column) and the fields they have no row for. */
   const fillDefaults = (files: string) => `INSERT INTO ${VALUES} (${cols})
   SELECT f.[File_Name], d.[Field_Index], d.[Field_Name_Display], d.[Value]
-  FROM (${files}) AS f CROSS JOIN ${DEFAULTS} AS d
+  FROM (${files}) AS f CROSS JOIN ${defaultRows}
   WHERE NOT EXISTS (SELECT 1 FROM ${VALUES} AS c WHERE c.[File_Name] = f.[File_Name] AND c.[Field_Index] = d.[Field_Index]);`;
 
-  writeFileSync(resolve(root, 'docs/bpl-constraints.sql'), `-- The model constants per input file, in their own schema (folder) ${SCHEMA}: edit them through
--- the view ${VIEW} (SELECT / INSERT / UPDATE / DELETE), one row per File_Name and Field_Index.
--- Value is the Model sheet's value: percentages as fractions (0.7 = 70%), dates as yyyy-mm-dd.
--- ${CHANGES_VIEW} lists every value the app's Constraints page applied (who, when, old and new).
--- The rows are in the app's tables ${VALUES} and ${CHANGES} (the app's data service only
--- works with dbo tables). Run after the app's deployment created them. Safe to rerun.
+  writeFileSync(resolve(root, 'docs/bpl-constraints.sql'), `-- The model constants per input file, in their own schema (folder) ${SCHEMA}:
+--   ${VALUES}: one row per File_Name and Field_Index; edit Value here
+--     (the Model sheet's value: percentages as fractions, 0.7 = 70%; dates as yyyy-mm-dd).
+--   ${CHANGES}: every value the app's Constraints page applied (who, when, old and new).
+-- The app reads and writes both through its functions. Safe to rerun.
 -- Generated by packages/frontend/scripts/gen-constraints.ts.
 
 SET XACT_ABORT ON;
 IF SCHEMA_ID('${SCHEMA}') IS NULL EXEC('CREATE SCHEMA [${SCHEMA}] AUTHORIZATION [dbo]');
 GO
--- An earlier version kept the rows in a table ${OLD} with triggers: move them into ${VALUES}.
-IF OBJECT_ID('${OLD}', 'U') IS NOT NULL
-BEGIN
-  BEGIN TRANSACTION;
-  EXEC('INSERT INTO ${VALUES} (${cols})
-    SELECT t.[File_Name], t.[Field_Index], t.[Field_Name_Display], t.[Value] FROM ${OLD} AS t
-    WHERE NOT EXISTS (SELECT 1 FROM ${VALUES} AS c WHERE c.[File_Name] = t.[File_Name] AND c.[Field_Index] = t.[Field_Index])');
-  DROP TABLE ${OLD};
-  COMMIT;
-END
-DROP VIEW IF EXISTS ${OLD};
+-- Earlier versions showed the values through views in this schema; tables take their place.
+${OLD_VIEWS.map((v) => `DROP VIEW IF EXISTS ${v};`).join('\n')}
 DROP TRIGGER IF EXISTS dbo.[trg_ConstraintChanges_apply];
 DELETE FROM ${CACHE} WHERE [Table_Name] = N'BPL_Constraints';
 GO
-CREATE OR ALTER VIEW ${VIEW} AS
-SELECT ${cols} FROM ${VALUES};
+IF OBJECT_ID('${VALUES}', 'U') IS NULL
+  CREATE TABLE ${VALUES} (
+    [File_Name] NVARCHAR(200) NOT NULL,
+    [Field_Index] NVARCHAR(100) NOT NULL,
+    [Field_Name_Display] NVARCHAR(200) NOT NULL,
+    [Value] NVARCHAR(100) NULL,
+    CONSTRAINT [PK_BPL_ConstraintValues] PRIMARY KEY ([File_Name], [Field_Index])
+  );
+IF OBJECT_ID('${CHANGES}', 'U') IS NULL
+  CREATE TABLE ${CHANGES} (
+    [File_Name] NVARCHAR(200) NOT NULL,
+    [Field_Index] NVARCHAR(100) NOT NULL,
+    [Field_Name_Display] NVARCHAR(200) NOT NULL,
+    [Old_Value] NVARCHAR(100) NULL,
+    [New_Value] NVARCHAR(100) NULL,
+    [User_mail] NVARCHAR(200) NOT NULL,
+    [Changed_On] DATETIME2 NOT NULL CONSTRAINT [DF_BPL_ConstraintChanges_Changed_On] DEFAULT SYSUTCDATETIME()
+  );
 GO
-CREATE OR ALTER VIEW ${CHANGES_VIEW} AS
-SELECT [File_Name], [Field_Index], [Field_Name_Display], [Old_Value], [New_Value], [User_mail], [Changed_On] FROM ${CHANGES};
-GO
--- The Model sheet's own values: what every input file starts with.
-CREATE OR ALTER VIEW ${DEFAULTS} AS
-SELECT [Field_Index], [Field_Name_Display], [Value] FROM (VALUES
-${CONSTRAINT_FIELDS.map((f) => `  (${sql(f.index)}, ${sql(f.display)}, ${sql(defaults[f.index])})`).join(',\n')}
-) AS d ([Field_Index], [Field_Name_Display], [Value]);
+-- The values and log the app kept in dbo (and a table an earlier version had here), if any.
+IF OBJECT_ID('${OLD_VALUES}', 'U') IS NOT NULL
+  EXEC('INSERT INTO ${VALUES} (${cols})
+    SELECT o.[File_Name], o.[Field_Index], MAX(o.[Field_Name_Display]), MAX(o.[Value]) FROM ${OLD_VALUES} AS o
+    WHERE NOT EXISTS (SELECT 1 FROM ${VALUES} AS c WHERE c.[File_Name] = o.[File_Name] AND c.[Field_Index] = o.[Field_Index])
+    GROUP BY o.[File_Name], o.[Field_Index]');
+IF OBJECT_ID('${OLD_CHANGES}', 'U') IS NOT NULL
+  EXEC('INSERT INTO ${CHANGES} (${changeCols})
+    SELECT ${changeCols} FROM ${OLD_CHANGES} AS o
+    WHERE NOT EXISTS (SELECT 1 FROM ${CHANGES} AS c WHERE c.[File_Name] = o.[File_Name] AND c.[Field_Index] = o.[Field_Index] AND c.[Changed_On] = o.[Changed_On])');
+IF OBJECT_ID('${OLD_TABLE}', 'U') IS NOT NULL
+  DROP TABLE ${OLD_TABLE};
 GO
 -- Input files the loader adds later start with the defaults.
 IF OBJECT_ID('dbo.[Input_files]', 'U') IS NOT NULL

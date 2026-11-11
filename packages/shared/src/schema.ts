@@ -9,6 +9,4 @@ export type UniversalAppSchema = {
   LoanModelMonthly: TableRecord;
   LoanChange: TableRecord;
   LookupCache: TableRecord;
-  ConstraintValue: TableRecord;
-  ConstraintChange: TableRecord;
 };

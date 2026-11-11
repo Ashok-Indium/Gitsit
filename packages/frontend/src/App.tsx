@@ -3,13 +3,12 @@ import { useContext, useMemo, useState } from 'react';
 
 import { LoanDetail } from '@/components/loan-detail';
 import { CONSTRAINT_BY_INDEX, constraintCell } from '@/engine/constraint-fields';
-import constraintDefaults from '@/engine/generated/constraint-defaults.json';
 import { FIELD_BY_COL } from '@/engine/model-schema';
 import type { Constants, Override } from '@/engine/protocol';
 import { useModelEngine } from '@/engine/use-model-engine';
 import { AuthContext } from '@/hooks/auth.context';
 import { useTheme } from '@/hooks/theme.context';
-import { displayName, type ConstraintChangeEntry } from '@/store/shared-model';
+import { displayName, type ConstraintEdit } from '@/store/shared-model';
 import { FABRIC_SOURCE, useInputLoans } from '@/store/use-input-loans';
 import { useSharedModel, type StoreStatus } from '@/store/use-shared-model';
 import { exportToExcel } from '@/lib/export-excel';
@@ -99,25 +98,20 @@ function App() {
   };
   const constraints: ConstraintsChoice = {
     values: loans.constants,
-    // The model recalculates with the new values at once; they are saved to ConstraintValues
-    // (Constraints.BPL_ConstraintValues in SQL) and logged in ConstraintChanges (Constraints.BPL_ConstraintChanges).
+    error: loans.constraintsError,
+    // The model recalculates with the new values at once; they are saved to Constraints.BPL_ConstraintValues
+    // and logged in Constraints.BPL_ConstraintChanges.
     onApply: async (values) => {
       const file = loans.fileName;
       if (!file) throw new Error('No input file is selected.');
       const cells: Constants = {};
-      const entries: ConstraintChangeEntry[] = [];
-      const at = new Date();
+      const entries: ConstraintEdit[] = [];
       for (const [index, value] of values) {
         const f = CONSTRAINT_BY_INDEX.get(index);
         const cell = f ? constraintCell(f, value) : null;
         if (!f || cell === null) continue;
         cells[f.cell] = cell;
-        if (user) {
-          entries.push({
-            File_Name: file, Field_Index: index, Field_Name_Display: f.display, User_mail: user.email, Changed_On: at,
-            Old_Value: loans.constants.get(index) ?? (constraintDefaults as Record<string, string>)[index] ?? null, New_Value: value,
-          });
-        }
+        if (user) entries.push({ File_Name: file, Field_Index: index, Field_Name_Display: f.display, New_Value: value });
       }
       const n = Object.keys(cells).length;
       const done = await shared.applyConstants(cells, entries);

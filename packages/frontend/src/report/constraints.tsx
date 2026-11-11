@@ -15,6 +15,8 @@ import { FileSlicer, PageBanner, VisualFrame } from './visuals';
 /** The selected file's stored constants and how to apply new ones. */
 export interface ConstraintsChoice {
   values: FileConstants;
+  /** Why the stored values couldn't be read; applying is held back so they aren't overwritten blind. */
+  error: string | null;
   /** Applies the given stored values (by Field_Index) to the selected file; resolves with what happened and whether they were saved. */
   onApply: (values: Map<string, string>) => Promise<{ message: string; saved: boolean }>;
 }
@@ -120,14 +122,15 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
             <div className="flex flex-wrap items-center gap-200">
               <button type="button" className={ghostBtn} disabled={busy || !Object.keys(draft).length}
                 onClick={() => setDrafts((all) => ({ ...all, [fileName]: {} }))}>Discard</button>
-              <button type="button" disabled={busy || !constraints || !pending.length || invalid.length > 0} onClick={() => void apply()}
+              <button type="button" disabled={busy || !constraints || !!constraints.error || !pending.length || invalid.length > 0} onClick={() => void apply()}
                 className="inline-flex items-center justify-center rounded-2xl bg-action px-400 py-200 text-300 font-semibold text-action-foreground hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                 {applying ? 'Applying…' : `Apply${pending.length ? ` ${pending.length} change${pending.length === 1 ? '' : 's'}` : ''}`}
               </button>
             </div>
           </div>
           <p aria-live="polite" className="mt-200 text-200 text-muted-foreground">
-            {invalid.length ? <span className="text-destructive">Fix {invalid.map((e) => e.f.display).join(', ')} before applying.</span>
+            {constraints?.error ? <span role="alert" className="text-destructive">Couldn't read the saved values from Constraints.BPL_ConstraintValues ({constraints.error}). The Model sheet's values are shown and Apply is off.</span>
+              : invalid.length ? <span className="text-destructive">Fix {invalid.map((e) => e.f.display).join(', ')} before applying.</span>
               : result?.file === fileName ? result.text
                 : `${fromDefault} of ${CONSTRAINT_FIELDS.length} fields differ from the Model sheet for this file. Percent fields take percentages (70 = 70%).`}
           </p>

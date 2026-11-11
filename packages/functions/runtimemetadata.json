@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "2.0",
+  "functions": [
+    {
+      "functionName": "loadConstraints",
+      "delegateParameters": [
+        {
+          "name": "ctx",
+          "type": "RayfinContext<Record<string, never>, AudienceType.Sql>",
+          "optional": false,
+          "hasDefault": false,
+          "position": 0,
+          "isFabricParameter": false
+        }
+      ],
+      "contextAudiences": [
+        "Sql"
+      ]
+    },
+    {
+      "functionName": "applyConstraints",
+      "delegateParameters": [
+        {
+          "name": "ctx",
+          "type": "RayfinContext<Record<string, never>, AudienceType.Sql>",
+          "optional": false,
+          "hasDefault": false,
+          "position": 0,
+          "isFabricParameter": false
+        },
+        {
+          "name": "fileName",
+          "type": "string",
+          "optional": false,
+          "hasDefault": false,
+          "position": 1,
+          "isFabricParameter": false
+        },
+        {
+          "name": "edits",
+          "type": "ConstraintEdit[]",
+          "optional": false,
+          "hasDefault": false,
+          "position": 2,
+          "isFabricParameter": false
+        }
+      ],
+      "contextAudiences": [
+        "Sql"
+      ]
+    }
+  ]
+}

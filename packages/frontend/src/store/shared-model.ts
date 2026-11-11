@@ -287,19 +287,19 @@ export async function loadLookups(client: Client): Promise<Lookups> {
 }
 
 // ---------- model constants (the Constraints page) ----------
+// They are in the tables Constraints.BPL_ConstraintValues and BPL_ConstraintChanges, outside the
+// data service's reach (dbo only), so the app reads and writes them through its functions.
 
-/** A ConstraintValues row (Constraints.BPL_ConstraintValues in SQL). */
+/** A Constraints.BPL_ConstraintValues row. */
 export interface ConstraintRow {
   File_Name: string;
   Field_Index: string;
   Value: string | null;
 }
 
-const CONSTRAINT_NAMES = ['File_Name', 'Field_Index', 'Field_Name_Display', 'Value'];
-
 /** Every input file's model constants. */
 export async function loadConstraints(client: Client): Promise<ConstraintRow[]> {
-  return await readAll(client, 'ConstraintValues', CONSTRAINT_NAMES) as unknown as ConstraintRow[];
+  return await client.functions.loadConstraints.invoke();
 }
 
 /** A file's stored constants by Field_Index. */
@@ -319,38 +319,28 @@ export function constraintsFingerprint(byFile: Map<string, FileConstants>): stri
   return JSON.stringify([...byFile].flatMap(([file, values]) => [...values].map(([index, v]) => `${file}|${index}|${v ?? ''}`)).sort());
 }
 
-/** One ConstraintChanges row: a constant the Constraints page applied to one input file. */
-export interface ConstraintChangeEntry {
+/** A constant the Constraints page applies to one input file. */
+export interface ConstraintEdit {
   File_Name: string;
   Field_Index: string;
   Field_Name_Display: string;
-  Old_Value: string | null;
-  New_Value: string | null;
-  User_mail: string;
-  Changed_On: Date;
+  New_Value: string;
 }
 
 /**
- * Saves applied constants into ConstraintValues and logs them in ConstraintChanges. A file with no
- * rows yet gets one for every field: the applied values and `defaults` for the rest.
+ * Saves applied constants into Constraints.BPL_ConstraintValues; the function logs each in
+ * BPL_ConstraintChanges with the value it replaced, who applied it and when.
  */
-export async function saveConstraints(client: Client, entries: ConstraintChangeEntry[],
-  fields: { index: string; display: string }[], defaults: Record<string, string>): Promise<void> {
-  for (const file of new Set(entries.map((e) => e.File_Name))) {
-    const mine = entries.filter((e) => e.File_Name === file);
-    const stored = new Map((await readAll(client, 'ConstraintValues', CONSTRAINT_NAMES, file)).map((r) => [String(r.Field_Index), r]));
-    const values = new Map(mine.map((e) => [e.Field_Index, e]));
-    const missing = stored.size ? mine.filter((e) => !stored.has(e.Field_Index)).map((e) => ({ index: e.Field_Index, display: e.Field_Name_Display }))
-      : fields;
-    await inBatches(mine.filter((e) => stored.has(e.Field_Index)), 10,
-      (e) => updateRow(client, 'ConstraintValues', stored.get(e.Field_Index)!.id, { Value: e.New_Value }));
-    await inBatches(missing, 10, (f) => insertRow(client, 'ConstraintValues', {
-      File_Name: file, Field_Index: f.index, Field_Name_Display: f.display,
-      Value: values.has(f.index) ? values.get(f.index)!.New_Value : defaults[f.index] ?? null,
-    }));
+export async function saveConstraints(client: Client, edits: ConstraintEdit[]): Promise<void> {
+  for (const file of new Set(edits.map((e) => e.File_Name))) {
+    await client.functions.applyConstraints.invoke({
+      fileName: file,
+      edits: edits.filter((e) => e.File_Name === file)
+        .map(({ Field_Index, Field_Name_Display, New_Value }) => ({ Field_Index, Field_Name_Display, New_Value })),
+    });
   }
-  await inBatches(entries, 10, (e) => insertRow(client, 'ConstraintChanges', { ...e }));
 }
+
 function parseRows(json: unknown): Lookups[string] {
   if (typeof json !== 'string') return [];
   try {
