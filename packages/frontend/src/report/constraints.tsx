@@ -1,4 +1,4 @@
-// Constraints: the model constants of one input file (Constraints.BPL_Constraints). Pick the file,
+// Constraints: the model constants of one input file (Constraints.BPL_ConstraintValues). Pick the file,
 // change any values, then Apply: the model recalculates with them and they are saved for that file.
 
 import { RotateCcw, Search } from 'lucide-react';

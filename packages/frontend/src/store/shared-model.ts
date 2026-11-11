@@ -1,7 +1,7 @@
 // Reads and writes the app's tables in gitsit-test through the Rayfin data service: Input_table
 // (every input file's loans, by File_Name), Loan_Model and Loan_Model_Monthly (every loan's Model
 // sheet values), LoanChanges (one row per edited value), LookupCache (the BPL_Lookups tables and
-// Constraints.BPL_Constraints) and ConstraintChanges (one row per model constant applied).
+// Constraints.BPL_ConstraintValues) and ConstraintChanges (one row per model constant applied).
 // Every row carries its Table_Type (BPL); the app works on one input file (File_Name) at a time.
 
 import type { Lookups } from '@/engine/lookups';
@@ -288,7 +288,7 @@ export async function loadLookups(client: Client): Promise<Lookups> {
 
 // ---------- model constants (the Constraints page) ----------
 
-/** A ConstraintValues row (Constraints.BPL_Constraints in SQL). */
+/** A ConstraintValues row (Constraints.BPL_ConstraintValues in SQL). */
 export interface ConstraintRow {
   File_Name: string;
   Field_Index: string;

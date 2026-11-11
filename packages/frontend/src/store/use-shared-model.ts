@@ -23,7 +23,7 @@ export interface SharedModel {
   reset: (cells: CellRef[]) => Promise<void>;
   resetAll: () => Promise<void>;
   /**
-   * Applies model constants to the model and saves them to ConstraintValues (Constraints.BPL_Constraints
+   * Applies model constants to the model and saves them to ConstraintValues (Constraints.BPL_ConstraintValues
    * in SQL), logging them in ConstraintChanges. Resolves with whether the model took them and whether
    * they were saved (nothing is written without a signed-in user or without entries).
    */

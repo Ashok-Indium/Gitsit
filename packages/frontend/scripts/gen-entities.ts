@@ -48,7 +48,7 @@ const CACHE = {
 
 /**
  * The model constants of each input file (one row per File_Name and Field_Index). People edit them
- * through the view Constraints.BPL_Constraints (docs/bpl-constraints.sql); the app reads and writes
+ * through the view Constraints.BPL_ConstraintValues (docs/bpl-constraints.sql); the app reads and writes
  * this table directly. (The data service can't write to a table with a trigger, so nothing here
  * relies on triggers on these tables.)
  */

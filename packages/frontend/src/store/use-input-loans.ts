@@ -30,7 +30,7 @@ export interface InputLoans {
   /** The input files in Input_table (each File_Name), and the one the model is built from. */
   files: InputFile[];
   fileName: string | null;
-  /** The selected file's stored model constants (Constraints.BPL_Constraints) by Field_Index. */
+  /** The selected file's stored model constants (Constraints.BPL_ConstraintValues) by Field_Index. */
   constants: FileConstants;
   /** Records constants this app has just saved for a file, so they are not taken for someone else's change. */
   rememberConstants: (fileName: string, values: FileConstants) => void;
@@ -62,7 +62,7 @@ function cellsOf(values: FileConstants | undefined): Constants {
  * changes every few minutes and on returning to the tab. The model is built from `fileName`'s
  * loans and constants, or the first file's when it is not in the table. The lookups come from
  * LookupCache, which triggers on the BPL_ tables in SQL fill, so the app only reads it; the constants
- * from ConstraintValues (Constraints.BPL_Constraints in SQL).
+ * from ConstraintValues (Constraints.BPL_ConstraintValues in SQL).
  */
 export function useInputLoans(fileName: string | null): InputLoans {
   const [rows, setRows] = useState<InputRow[] | null>(null);

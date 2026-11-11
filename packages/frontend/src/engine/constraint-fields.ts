@@ -1,5 +1,5 @@
 // The model constants people set per input file on the Constraints page and in the SQL table
-// Constraints.BPL_Constraints. `index` is the field's Field_Index there (the lakehouse field name
+// Constraints.BPL_ConstraintValues. `index` is the field's Field_Index there (the lakehouse field name
 // of the earlier constants table); `cell` is the Model-sheet cell the value goes into. Groups and
 // their order follow that constants table.
 
