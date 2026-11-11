@@ -134,6 +134,12 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
               : result?.file === fileName ? result.text
                 : `${fromDefault} of ${CONSTRAINT_FIELDS.length} fields differ from the Model sheet for this file. Percent fields take percentages (70 = 70%).`}
           </p>
+          <p className="mt-100 flex flex-wrap items-center gap-x-300 gap-y-100 text-200 text-muted-foreground">
+            <span className="inline-flex items-center gap-100">
+              <span aria-hidden className="inline-block size-300 rounded-sm border border-input bg-override" /> Typed, not applied yet: Apply saves it
+            </span>
+            <span><span className="font-semibold text-foreground">Bold</span>: saved value differs from the Model sheet</span>
+          </p>
         </VisualFrame>
 
         <VisualFrame title={`Model constants · ${fileName || 'no input file'}`}>
@@ -165,6 +171,7 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
                         </th>
                         <td className={cn(td, 'font-monospace text-muted-foreground')}>{f.index}</td>
                         <td className={cn(td, 'text-right')}>
+                          <div className="inline-flex flex-col items-end">
                           <span className="inline-flex items-center gap-100">
                             <input id={`constraint-${f.index}`} type={f.kind === 'date' ? 'date' : 'text'} inputMode={f.kind === 'date' ? undefined : 'decimal'}
                               value={text} disabled={busy} aria-invalid={bad || undefined}
@@ -181,6 +188,8 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
                               <RotateCcw className="icon-size-200" />
                             </button>
                           </span>
+                          {changed && <span className="pr-600 text-100 text-muted-foreground">Not applied · saved {shown(f, current)}</span>}
+                          </div>
                         </td>
                         <td className={cn(td, 'text-right tabular-nums text-muted-foreground')}>{shown(f, DEFAULTS[f.index] ?? '')}</td>
                         <td className={cn(td, 'font-monospace text-muted-foreground')}>Model!{f.cell}</td>

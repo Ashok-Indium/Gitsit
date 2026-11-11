@@ -184,7 +184,7 @@ function App() {
           <SaveStatus status={shared.status} />
           <button type="button" onClick={() => setShowChanges(true)} disabled={!snapshot}
             className={cn(navItem, 'border border-visual-border px-200', overrides.size ? 'bg-override text-override-foreground' : 'hover:bg-accent')}>
-            <History className="icon-size-200" /> Your changes ({overrides.size})
+            <History className="icon-size-200" /> Loan changes ({overrides.size})
           </button>
           <div className="flex gap-200">
             <button type="button" disabled={busy || !overrides.size} onClick={() => void shared.resetAll()}
@@ -214,7 +214,7 @@ function App() {
             {PAGES.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
           </select>
           <button type="button" onClick={() => setShowChanges(true)} className="rounded-md border border-visual-border px-200 py-100 text-200">
-            Changes ({overrides.size})
+            Loan changes ({overrides.size})
           </button>
         </div>
 
@@ -279,9 +279,9 @@ function App() {
               <LoanDetail loan={loan} overrides={overrides} busy={busy} onClose={() => setOpenLoan(null)}
                 onCommit={editing.onCommit} onReset={editing.onReset} />
             ) : (
-              <aside aria-label="Your changes" className="flex h-full flex-col border-l border-visual-border bg-card shadow-xl">
+              <aside aria-label="Loan changes" className="flex h-full flex-col border-l border-visual-border bg-card shadow-xl">
                 <header className="flex items-center justify-between border-b border-visual-border p-400">
-                  <h2 className="text-500 font-bold text-title">Your changes</h2>
+                  <h2 className="text-500 font-bold text-title">Loan changes</h2>
                   <button type="button" aria-label="Close" onClick={() => setShowChanges(false)} className="rounded-md p-100 hover:bg-accent">
                     <X className="icon-size-300" />
                   </button>
