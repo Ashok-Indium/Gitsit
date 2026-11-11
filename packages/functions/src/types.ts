@@ -22,7 +22,7 @@ export type AppFunctionsSchema = {
     output: { File_Name: string; Field_Index: string; Value: null | string }[];
   };
   applyConstraints: {
-    input: { fileName: string; edits: { Field_Index: string; Field_Name_Display: string; New_Value: string }[] };
+    input: { fileName: string; edits: { Field_Index: string; Field_Name_Display: string; New_Value: string }[]; userMail: string };
     output: { saved: number };
   };
 };

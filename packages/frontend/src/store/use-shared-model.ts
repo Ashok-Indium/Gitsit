@@ -122,7 +122,7 @@ export function useSharedModel(engine: ModelEngine, user: StoreUser | null, offl
     await enqueue(async () => {
       const client = await getRayfinClient();
       try {
-        await saveConstraints(client, entries);
+        await saveConstraints(client, entries, user.email);
       } catch (e) {
         outcome.error = message(e);
         throw e;

@@ -39,14 +39,15 @@ async function connect(ctx: SqlContext): Promise<sql.ConnectionPool> {
   }).connect();
 }
 
-/** Who invoked the function: the email in the caller's Rayfin token. */
-function callerEmail(ctx: SqlContext): string {
+/** Who invoked the function: the email in the caller's Rayfin token (xms_attr.<app>.rfn_email), if it carries one. */
+function callerEmail(ctx: SqlContext): string | undefined {
   try {
     const claims = JSON.parse(Buffer.from(ctx.accessToken.split('.')[1], 'base64url').toString('utf8')) as Record<string, unknown>;
-    const email = [claims.email, claims.preferred_username, claims.upn, claims.unique_name].find((v) => typeof v === 'string');
-    return (email as string | undefined)?.slice(0, 200) ?? 'unknown';
+    const attrs = Object.values((claims.xms_attr ?? {}) as Record<string, Record<string, unknown>>);
+    const email = [...attrs.map((a) => a?.rfn_email), claims.email, claims.preferred_username, claims.upn].find((v) => typeof v === 'string');
+    return (email as string | undefined)?.slice(0, 200);
   } catch {
-    return 'unknown';
+    return undefined;
   }
 }
 
@@ -72,13 +73,14 @@ udf.func(
 
 udf.func(
   'applyConstraints',
-  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>, fileName: string, edits: ConstraintEdit[]): Promise<ApplyResult> => {
+  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>, fileName: string, edits: ConstraintEdit[], userMail: string): Promise<ApplyResult> => {
     const file = text(fileName, 200);
     if (!Array.isArray(edits) || !edits.length || edits.length > 500) throw new Error('Invalid input.');
     const rows = edits.map((e) => ({
       index: text(e?.Field_Index, 100), display: text(e?.Field_Name_Display, 200), value: text(e?.New_Value, 100),
     }));
-    const user = callerEmail(ctx);
+    // The token's email when it has one, else the signed-in user's email the app sends.
+    const user = callerEmail(ctx) ?? (typeof userMail === 'string' && userMail.trim() ? userMail.trim().slice(0, 200) : 'unknown');
     const pool = await connect(ctx);
     const tx = new sql.Transaction(pool);
     try {

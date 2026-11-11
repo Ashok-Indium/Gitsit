@@ -329,12 +329,13 @@ export interface ConstraintEdit {
 
 /**
  * Saves applied constants into Constraints.BPL_ConstraintValues; the function logs each in
- * BPL_ConstraintChanges with the value it replaced, who applied it and when.
+ * BPL_ConstraintChanges with the value it replaced, who applied it (userMail) and when.
  */
-export async function saveConstraints(client: Client, edits: ConstraintEdit[]): Promise<void> {
+export async function saveConstraints(client: Client, edits: ConstraintEdit[], userMail: string): Promise<void> {
   for (const file of new Set(edits.map((e) => e.File_Name))) {
     await client.functions.applyConstraints.invoke({
       fileName: file,
+      userMail,
       edits: edits.filter((e) => e.File_Name === file)
         .map(({ Field_Index, Field_Name_Display, New_Value }) => ({ Field_Index, Field_Name_Display, New_Value })),
     });
