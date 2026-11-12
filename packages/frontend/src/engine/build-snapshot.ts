@@ -21,7 +21,7 @@ export async function buildSnapshot(input: EngineInput, replay?: (s: Snapshot) =
     worker.postMessage({ ...payload, id } as EngineRequest);
   });
   try {
-    let res = await call({ type: 'init', input: input.rows, source: input.source, lookups: input.lookups, constants: input.constants?.() });
+    let res = await call({ type: 'init', input: input.rows, source: input.source, lookups: input.lookups, lookupType: input.lookupType, constants: input.constants?.() });
     if (!res.ok) throw new Error(res.error);
     const changes = replay ? await replay(res.snapshot) : [];
     if (changes.length) {

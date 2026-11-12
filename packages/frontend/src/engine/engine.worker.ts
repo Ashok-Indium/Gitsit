@@ -71,11 +71,11 @@ function snapshot(recalcMs: number): Snapshot {
   return { loans, assumptions, constants, monthEnds, summary, overrides: [...overrides.values()], recalcMs };
 }
 
-function init(input: InputRow[], lookups?: Lookups, constants?: Constants): string[] {
+function init(input: InputRow[], lookups?: Lookups, constants?: Constants, lookupType?: string): string[] {
   template = JSON.parse(templateText) as ModelTemplate;
   const sheets: Record<string, Cell[][]> = {};
   for (const name of template.sheetOrder) sheets[name] = expandSheet(template.sheets[name]);
-  applyLookups(sheets, lookups);
+  applyLookups(sheets, lookups, lookupType);
   writeConstants(sheets[MODEL], constants);
   const loaded = loadInput(sheets[MODEL], template, input);
   rewriteWorkbook(sheets, template.names, { [MODEL]: loaded.hiddenRows }, dependsOnHiddenRows);
@@ -131,7 +131,7 @@ function handle(req: EngineRequest): EngineResponse {
   switch (req.type) {
     case 'init': {
       let dropped: string[] = [];
-      const ms = timed(() => { dropped = init(req.input, req.lookups, req.constants); });
+      const ms = timed(() => { dropped = init(req.input, req.lookups, req.constants, req.lookupType); });
       return {
         id: req.id, ok: true, snapshot: snapshot(ms),
         info: {

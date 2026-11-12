@@ -2,7 +2,8 @@
 // Constraints.BPL_ConstraintChanges of the app's database gitsit-test. The app's data service only
 // reaches dbo tables, so the Constraints page reads and saves them through these functions, which
 // run SQL as the app identity (the owner of the Fabric app item). deleteFiles removes input files
-// from every table at once, which the data service can't do in one transaction.
+// from every table at once, which the data service can't do in one transaction. loadLookups reads
+// the lookup tables of a file type from its schema (BPL_Lookups or NPL_Lookups).
 
 import { AudienceType, UserDataFunctions, type RayfinContext } from '@microsoft/fabric-user-data-functions';
 import sql from 'mssql';
@@ -30,6 +31,15 @@ export interface ConstraintEdit {
 export interface ApplyResult {
   saved: number;
 }
+
+export interface LookupRows {
+  table: string;
+  /** The table's rows as JSON (FOR JSON PATH), as the engine reads them. */
+  rows: string;
+}
+
+/** The lookup schema of each file type: BPL files read BPL_Lookups.BPL_…, NPL files NPL_Lookups.NPL_… */
+const LOOKUP_SCHEMAS = { BPL: 'BPL_Lookups', NPL: 'NPL_Lookups' } as const;
 
 export interface DeletedRows {
   table: string;
@@ -115,6 +125,32 @@ VALUES (@file, @index, @display, @old, @value, @user, SYSUTCDATETIME());`);
     } catch (e) {
       await tx.rollback().catch(() => undefined);
       throw e;
+    } finally {
+      await pool.close();
+    }
+  },
+  [],
+);
+
+// The lookup tables (EXIT, ZIP3 …) of one file type, read from that type's schema: BPL_Lookups for
+// BPL files, NPL_Lookups for NPL files. `tables` are the SQL table names (BPL_Exit …).
+udf.func(
+  'loadLookups',
+  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>, fileType: string, tables: string[]): Promise<LookupRows[]> => {
+    if (fileType !== 'BPL' && fileType !== 'NPL') throw new Error('Invalid input.');
+    const schema = LOOKUP_SCHEMAS[fileType];
+    if (!Array.isArray(tables) || !tables.length || tables.length > 50
+      || !tables.every((t) => typeof t === 'string' && new RegExp(`^${fileType}_[A-Za-z0-9]{1,100}$`).test(t))) throw new Error('Invalid input.');
+    const pool = await connect(ctx);
+    try {
+      const out: LookupRows[] = [];
+      for (const table of tables) {
+        const result = await pool.request().query<{ found: number; j: string | null }>(`SELECT CASE WHEN OBJECT_ID(N'[${schema}].[${table}]', N'U') IS NULL THEN 0 ELSE 1 END AS found;`);
+        if (!result.recordset[0]?.found) throw new Error(`The lookup table ${schema}.${table} doesn't exist.`);
+        const rows = await pool.request().query<{ j: string | null }>(`SELECT (SELECT * FROM [${schema}].[${table}] FOR JSON PATH, INCLUDE_NULL_VALUES) AS j;`);
+        out.push({ table, rows: rows.recordset[0]?.j ?? '[]' });
+      }
+      return out;
     } finally {
       await pool.close();
     }

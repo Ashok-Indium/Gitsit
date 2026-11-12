@@ -114,11 +114,14 @@ function applyGrid(sheets: Record<string, Cell[][]>, spec: LookupSpec, rows: Loo
   }
 }
 
-/** Writes this model's (Table_Type BPL) lookup rows into the workbook's lookup sheets. */
-export function applyLookups(sheets: Record<string, Cell[][]>, lookups: Lookups | undefined): void {
+/**
+ * Writes the lookup rows of the input file's type (Table_Type BPL, or NPL for files named NPL_…)
+ * into the workbook's lookup sheets; rows without a Table_Type count as that type.
+ */
+export function applyLookups(sheets: Record<string, Cell[][]>, lookups: Lookups | undefined, type: string = TABLE_TYPE): void {
   if (!lookups) return;
   for (const spec of LOOKUP_TABLES) {
-    const rows = (lookups[spec.table] ?? []).filter((r) => (r.Table_Type ?? TABLE_TYPE) === TABLE_TYPE);
+    const rows = (lookups[spec.table] ?? []).filter((r) => (r.Table_Type ?? type) === type);
     if (!rows.length || !sheets[spec.sheet]) continue;
     if (spec.kind === 'list') applyList(sheets, spec, rows);
     else if (spec.kind === 'lists') applyLists(sheets, spec, rows);

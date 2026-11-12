@@ -1,8 +1,9 @@
 // Reads and writes the app's tables in gitsit-test through the Rayfin data service: Input_table
 // (every input file's loans, by File_Name), Loan_Model and Loan_Model_Monthly (every loan's Model
-// sheet values), LoanChanges (one row per edited value), LookupCache (the BPL_Lookups tables and
-// Constraints.BPL_ConstraintValues) and ConstraintChanges (one row per model constant applied).
-// Every row carries its Table_Type (BPL); the app works on one input file (File_Name) at a time.
+// sheet values) and LoanChanges (one row per edited value). The lookup tables (BPL_Lookups or
+// NPL_Lookups, by the file's type) and the model constants (the Constraints schema) are read and
+// written through the app's functions. Every row carries its Table_Type (BPL); the app works on one
+// input file (File_Name) at a time.
 
 import type { Lookups } from '@/engine/lookups';
 import { FIELD_BY_COL } from '@/engine/model-schema';
@@ -13,6 +14,7 @@ import type { Loan } from '@/report/measures';
 import type { InputRow } from '@/engine/load-input';
 
 import inputRows from './generated/input-rows.json';
+import { lookupTableName, type FileType } from './file-type';
 import { DATA_TABLES } from './generated/data-tables';
 import { LOOKUP_TABLES, TABLE_TYPE } from './generated/lookup-fields';
 import { FILE_NAME, INPUT_COLUMNS, MODEL_COLUMNS, MONTH_COLUMNS, MONTHLY_SERIES } from './generated/store-fields';
@@ -292,13 +294,14 @@ export function inputFiles(rows: InputRow[]): { name: string; loans: number }[] 
 const lookupNames = (s: (typeof LOOKUP_TABLES)[number]) => ['Table_Type', ...s.columns.map((c) => c.name)];
 
 /**
- * Every lookup table's rows (all categories; the engine keeps this model's), by table name, from
- * LookupCache: one row per lookup holding its rows as JSON, written by triggers on the
- * BPL_Lookups tables. A lookup with no row (or unreadable JSON) keeps the workbook's values.
+ * One file type's lookup tables, by table name (EXIT, ZIP3 …): BPL_Lookups.BPL_… for BPL files,
+ * NPL_Lookups.NPL_… for NPL files, read through the app's loadLookups function (the data service
+ * only reaches dbo). A lookup with no rows keeps the workbook's values.
  */
-export async function loadLookups(client: Client): Promise<Lookups> {
-  const cached = new Map((await readAll(client, 'LookupCache', ['Table_Name', 'Rows_Json'])).map((r) => [String(r.Table_Name), r.Rows_Json]));
-  return Object.fromEntries(LOOKUP_TABLES.map((s) => [s.table, parseRows(cached.get(s.table))]));
+export async function loadLookups(client: Client, type: FileType): Promise<Lookups> {
+  const read = await client.functions.loadLookups.invoke({ fileType: type, tables: LOOKUP_TABLES.map((s) => lookupTableName(type, s.table)) });
+  const byTable = new Map(read.map((r) => [r.table, r.rows]));
+  return Object.fromEntries(LOOKUP_TABLES.map((s) => [s.table, parseRows(byTable.get(lookupTableName(type, s.table)))]));
 }
 
 // ---------- model constants (the Constraints page) ----------
@@ -367,10 +370,9 @@ function parseRows(json: unknown): Lookups[string] {
   }
 }
 
-/** A value that changes whenever any lookup row of this model's category changes, ignoring row order. */
+/** A value that changes whenever any lookup row changes, ignoring row order. */
 export function lookupsFingerprint(lookups: Lookups): string {
   return JSON.stringify(LOOKUP_TABLES.map((s) => (lookups[s.table] ?? [])
-    .filter((r) => r.Table_Type === TABLE_TYPE)
     .map((r) => JSON.stringify(lookupNames(s).map((n) => r[n] ?? null)))
     .sort()));
 }

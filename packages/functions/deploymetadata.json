@@ -97,6 +97,56 @@
       "functionCode": "udf.func(\n  'applyConstraints',\n  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>, fileName: string, edits: ConstraintEdit[], userMail: string): Promise<ApplyResult> => {\n    const file = text(fileName, 200);\n    if (!Array.isArray(edits) || !edits.length || edits.length > 500) throw new Error('Invalid input.');\n    const rows = edits.map((e) => ({\n      index: text(e?.Field_Index, 100), display: text(e?.Field_Name_Display, 200), value: text(e?.New_Value, 100),\n    }));\n    // The token's email when it has one, else the signed-in user's email the app sends.\n    const user = callerEmail(ctx) ?? (typeof userMail === 'string' && userMail.trim() ? userMail.trim().slice(0, 200) : 'unknown');\n    const pool = await connect(ctx);\n    const tx = new sql.Transaction(pool);\n    try {\n      await tx.begin();\n      for (const r of rows) {\n        // The value it replaces goes into the change log with the new one.\n        await new sql.Request(tx)\n          .input('file', sql.NVarChar(200), file).input('index', sql.NVarChar(100), r.index)\n          .input('display', sql.NVarChar(200), r.display).input('value', sql.NVarChar(100), r.value)\n          .input('user', sql.NVarChar(200), user)\n          .query(`DECLARE @old NVARCHAR(100) = (SELECT [Value] FROM [Constraints].[BPL_ConstraintValues] WHERE [File_Name] = @file AND [Field_Index] = @index);\nUPDATE [Constraints].[BPL_ConstraintValues] SET [Value] = @value WHERE [File_Name] = @file AND [Field_Index] = @index;\nIF @@ROWCOUNT = 0\n  INSERT INTO [Constraints].[BPL_ConstraintValues] ([File_Name], [Field_Index], [Field_Name_Display], [Value]) VALUES (@file, @index, @display, @value);\nINSERT INTO [Constraints].[BPL_ConstraintChanges] ([File_Name], [Field_Index], [Field_Name_Display], [Old_Value], [New_Value], [User_mail], [Changed_On])\nVALUES (@file, @index, @display, @old, @value, @user, SYSUTCDATETIME());`);\n      }\n      await tx.commit();\n      return { saved: rows.length };\n    } catch (e) {\n      await tx.rollback().catch(() => undefined);\n      throw e;\n    } finally {\n      await pool.close();\n    }\n  },\n  [],\n)"
     },
     {
+      "name": "loadLookups",
+      "scriptFile": "src\\function_app.ts",
+      "bindings": [
+        {
+          "name": "req",
+          "type": "httpTrigger",
+          "direction": "in",
+          "authLevel": "anonymous",
+          "methods": [
+            "post"
+          ],
+          "route": "loadLookups"
+        },
+        {
+          "name": "$return",
+          "type": "http",
+          "direction": "out"
+        },
+        {
+          "name": "__generic_Sql",
+          "direction": "in",
+          "type": "FabricItem",
+          "alias": "",
+          "audienceType": "Sql"
+        }
+      ],
+      "fabricProperties": {
+        "fabricMetadataSchemaVersion": "1.0",
+        "fabricFunctionReturnType": "Promise<LookupRows[]>",
+        "fabricFunctionParameters": [
+          {
+            "name": "ctx",
+            "dataType": "RayfinContext<Record<string, never>, AudienceType.Sql>",
+            "hasDefaultValue": false
+          },
+          {
+            "name": "fileType",
+            "dataType": "string",
+            "hasDefaultValue": false
+          },
+          {
+            "name": "tables",
+            "dataType": "string[]",
+            "hasDefaultValue": false
+          }
+        ]
+      },
+      "functionCode": "udf.func(\n  'loadLookups',\n  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>, fileType: string, tables: string[]): Promise<LookupRows[]> => {\n    if (fileType !== 'BPL' && fileType !== 'NPL') throw new Error('Invalid input.');\n    const schema = LOOKUP_SCHEMAS[fileType];\n    if (!Array.isArray(tables) || !tables.length || tables.length > 50\n      || !tables.every((t) => typeof t === 'string' && new RegExp(`^${fileType}_[A-Za-z0-9]{1,100}$`).test(t))) throw new Error('Invalid input.');\n    const pool = await connect(ctx);\n    try {\n      const out: LookupRows[] = [];\n      for (const table of tables) {\n        const result = await pool.request().query<{ found: number; j: string | null }>(`SELECT CASE WHEN OBJECT_ID(N'[${schema}].[${table}]', N'U') IS NULL THEN 0 ELSE 1 END AS found;`);\n        if (!result.recordset[0]?.found) throw new Error(`The lookup table ${schema}.${table} doesn't exist.`);\n        const rows = await pool.request().query<{ j: string | null }>(`SELECT (SELECT * FROM [${schema}].[${table}] FOR JSON PATH, INCLUDE_NULL_VALUES) AS j;`);\n        out.push({ table, rows: rows.recordset[0]?.j ?? '[]' });\n      }\n      return out;\n    } finally {\n      await pool.close();\n    }\n  },\n  [],\n)"
+    },
+    {
       "name": "deleteFiles",
       "scriptFile": "src\\function_app.ts",
       "bindings": [

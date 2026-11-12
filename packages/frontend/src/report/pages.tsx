@@ -1,6 +1,6 @@
 // The GITSITFINAL report pages, laid out after the report's own visual positions (1280x720 canvas).
 
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { ChevronDown, ExternalLink, Loader2 } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import clearFilterIcon from '@/assets/clear-filter.png';
@@ -19,6 +19,7 @@ import { binLoans, cumulative, HISTOGRAMS, type HistogramDef } from './histogram
 import { groupBy, MEASURES, num, text, type Loan, type MeasureKey } from './measures';
 import { CashFlowPivot, LoanTable, MeasureMatrix, type Editing } from './tables';
 import { CardGroup, FileMultiSlicer, FileSlicer, PageBanner, Slicer, VisualFrame, type InputFileOption } from './visuals';
+import { FILE_TYPES, fileTypeOf, type FileType } from '@/store/file-type';
 import type { FileView } from '@/store/use-other-files';
 
 // ---------- slicers ----------
@@ -47,7 +48,12 @@ export interface FileChoice {
   onShownChange?: (names: string[]) => void;
   /** The other shown files, each calculated beside the model. */
   others?: FileView[];
+  /** The Home page's File Type filter: only files of that type (by their name's prefix), or all. */
+  fileType?: FileTypeChoice;
+  onFileTypeChange?: (type: FileTypeChoice) => void;
 }
+
+export type FileTypeChoice = 'All' | FileType;
 
 export interface PageProps {
   snapshot: Snapshot;
@@ -78,16 +84,29 @@ function HomeSlicers({ snapshot, filters, setFilters, file, extra, loans = snaps
   /** Several files can be ticked (the Home page); elsewhere the slicer picks the model's file. */
   multi?: boolean;
 }) {
+  const type = file.fileType ?? 'All';
   return (
     <div className="flex flex-wrap items-end gap-300 px-300">
       {multi && file.onShownChange ? (
-        <FileMultiSlicer className="w-full sm:w-[457px]" files={file.files} selected={file.shown ?? (file.fileName ? [file.fileName] : [])}
-          onChange={file.onShownChange} disabled={file.busy} />
+        <FileMultiSlicer className="w-full sm:w-[457px]" files={file.files.filter((f) => type === 'All' || fileTypeOf(f.name) === type)}
+          selected={file.shown ?? (file.fileName ? [file.fileName] : [])} onChange={file.onShownChange} disabled={file.busy} />
       ) : (
         <FileSlicer className="w-full sm:w-[457px]" files={file.files} value={file.fileName} onChange={file.onFileChange} disabled={file.busy} />
       )}
       <Slicer label="Pool" className="w-48" options={optionsOf(loans, 'Pool')} selected={filters.Pool ?? []}
         onChange={(v) => setFilters({ ...filters, Pool: v })} />
+      {multi && file.onFileTypeChange && (
+        <label className="flex w-32 flex-col gap-100">
+          <span className="text-200 font-bold text-foreground">File Type</span>
+          <span className="relative">
+            <select value={type} disabled={file.busy} onChange={(e) => file.onFileTypeChange!(e.target.value as FileTypeChoice)}
+              className="w-full appearance-none rounded-sm border border-input bg-card py-100 pl-200 pr-600 text-300 hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60">
+              {(['All', ...FILE_TYPES] as const).map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <ChevronDown aria-hidden className="pointer-events-none absolute right-200 top-1/2 icon-size-200 -translate-y-1/2 text-muted-foreground" />
+          </span>
+        </label>
+      )}
       {extra}
     </div>
   );
@@ -113,7 +132,9 @@ export function HomePage({ snapshot, editing, filters, setFilters, navigate, fil
     const byFile = new Map(others.flatMap((o) => (o.snapshot ? [[o.name, o.snapshot] as const] : [])));
     return (l: Loan) => (l.file && byFile.get(l.file)) || snapshot;
   }, [snapshot, others]);
-  const loans = applyFilters(all, filters);
+  const type = file.fileType ?? 'All';
+  const loans = applyFilters(all, filters).filter((l) => type === 'All' || fileTypeOf(l.file ?? file.fileName ?? '') === type);
+  const noneOfType = type !== 'All' && !file.files.some((f) => fileTypeOf(f.name) === type);
   const multi = (file.shown?.length ?? 1) > 1;
   const calculating = others.filter((o) => !o.snapshot && !o.error).map((o) => o.name);
   const failed = others.filter((o) => o.error);
@@ -122,7 +143,7 @@ export function HomePage({ snapshot, editing, filters, setFilters, navigate, fil
       <PageBanner title="GITSIT Bid Model Dashboard" />
       <HomeSlicers snapshot={snapshot} loans={all} multi filters={filters} setFilters={setFilters} file={file} extra={
         <>
-          <button type="button" title="Clear Filters" aria-label="Clear filters" onClick={() => setFilters({})}
+          <button type="button" title="Clear Filters" aria-label="Clear filters" onClick={() => { setFilters({}); file.onFileTypeChange?.('All'); }}
             className="mb-100 rounded-md p-100 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <img src={clearFilterIcon} alt="" className="icon-size-600" />
           </button>
@@ -150,8 +171,13 @@ export function HomePage({ snapshot, editing, filters, setFilters, navigate, fil
           ))}
         </div>
       </div>
-      {(multi || calculating.length > 0 || failed.length > 0) && (
+      {(multi || noneOfType || calculating.length > 0 || failed.length > 0) && (
         <div aria-live="polite" className="flex flex-col gap-100 px-300 text-200 text-muted-foreground">
+          {noneOfType && (
+            <p role="status" className="text-destructive">
+              No {type} files are loaded yet: a file counts as {type} when its name starts with “{type}” (e.g. {type}_Pacific Private Money).
+            </p>
+          )}
           {calculating.length > 0 && (
             <p className="flex items-center gap-200"><Loader2 className="icon-size-200 animate-spin" /> Calculating {calculating.join(', ')}…</p>
           )}

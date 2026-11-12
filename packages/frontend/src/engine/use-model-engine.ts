@@ -33,6 +33,8 @@ export interface EngineInput {
   source: string;
   /** The lookup tables (EXIT, ZIP3 …) to write into the model; absent = the workbook's values. */
   lookups?: Lookups;
+  /** The input file's type (BPL or NPL): the model keeps the lookup rows of that Table_Type. */
+  lookupType?: string;
   /** The input file (File_Name) the rows come from. */
   fileName?: string;
   /** That file's model constants (the Constraints page), read when the model is built; absent ones keep the workbook's values. */
@@ -103,7 +105,7 @@ export function useModelEngine(input: EngineInput | null): ModelEngine {
 
   useEffect(() => {
     if (!input) return;
-    void send({ type: 'init', input: input.rows, source: input.source, lookups: input.lookups, constants: input.constants?.() }).then((res) => {
+    void send({ type: 'init', input: input.rows, source: input.source, lookups: input.lookups, lookupType: input.lookupType, constants: input.constants?.() }).then((res) => {
       receive(res, true);
       if (res.ok) setBuiltFor(input.fileName ?? '');
     });

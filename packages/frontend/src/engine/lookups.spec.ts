@@ -58,6 +58,22 @@ describe('lookup tables', () => {
     expect(poolBid(otherType)).toBeCloseTo(base, 6);
   }, 120_000);
 
+  it("applies an NPL file's rows (Table_Type NPL) and leaves them out of a BPL file", () => {
+    const changed = copy(workbookLookups);
+    for (const r of changed.EXIT) for (const k of Object.keys(r)) if (k.startsWith('DQ_') && typeof r[k] === 'number') r[k] = (r[k] as number) * 0.5;
+    const npl = copy(changed);
+    for (const rows of Object.values(npl)) for (const r of rows) r.Table_Type = 'NPL';
+    const asBpl = sheetsOf();
+    applyLookups(asBpl, changed);
+    const asNpl = sheetsOf();
+    applyLookups(asNpl, npl, 'NPL');
+    expect(asNpl).toEqual(asBpl);
+    const wrongType = sheetsOf();
+    applyLookups(wrongType, npl);
+    expect(wrongType).toEqual(sheetsOf());
+    expect(asBpl).not.toEqual(sheetsOf());
+  });
+
   it('widens the formula ranges when rows are added, and narrows them when removed', () => {
     const more = copy(workbookLookups);
     more.ZIP3.push({ Prop_State: 'ZZ', Zip3: '999', Prop_Sale_Pct_CV: 0.5, Note_Sale_Pct_CV: 0.4 });

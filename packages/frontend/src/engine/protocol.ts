@@ -66,7 +66,8 @@ export interface CellChange extends CellRef {
 export type Constants = Record<string, number>;
 
 export type EngineRequest =
-  | { id: number; type: 'init'; input: InputRow[]; source: string; lookups?: Lookups; constants?: Constants }
+  // lookupType: the input file's type (BPL or NPL), whose lookup rows the model keeps.
+  | { id: number; type: 'init'; input: InputRow[]; source: string; lookups?: Lookups; lookupType?: string; constants?: Constants }
   | { id: number; type: 'setConstants'; constants: Constants }
   | { id: number; type: 'set'; row: number; col: string; value: number | string }
   | { id: number; type: 'setMany'; changes: CellChange[] }

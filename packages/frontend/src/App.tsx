@@ -12,6 +12,8 @@ import { getRayfinClient } from '@/lib/rayfin-client';
 import { deleteFiles, displayName, type ConstraintEdit } from '@/store/shared-model';
 import { FABRIC_SOURCE, useInputLoans } from '@/store/use-input-loans';
 import { useOtherFiles } from '@/store/use-other-files';
+import { fileTypeOf } from '@/store/file-type';
+import type { FileTypeChoice } from '@/report/pages';
 import { useSharedModel, type StoreStatus } from '@/store/use-shared-model';
 import { exportToExcel } from '@/lib/export-excel';
 import { cn } from '@/lib/utils';
@@ -91,6 +93,17 @@ function App() {
     return loans.fileName && !list.includes(loans.fileName) ? [loans.fileName, ...list] : list;
   }, [shownChoice, loans.files, loans.fileName]);
   const otherFiles = useOtherFiles(shownFiles.filter((n) => n !== loans.fileName), loans.inputFor, !!user);
+  // The Home page's File Type filter: picking a type keeps the ticked files of that type, or ticks
+  // (and opens) the first file of it when none is ticked.
+  const [fileType, setFileType] = useState<FileTypeChoice>('All');
+  const chooseFileType = (type: FileTypeChoice) => {
+    setFileType(type);
+    if (type === 'All') return;
+    const keep = shownFiles.filter((n) => fileTypeOf(n) === type);
+    const first = loans.files.find((f) => fileTypeOf(f.name) === type)?.name;
+    if (keep.length) showFiles(keep);
+    else if (first) showFiles([first]);
+  };
   const filePicker = (id: string) => (
     <>
       <label className="sr-only" htmlFor={id}>Input file</label>
@@ -160,7 +173,8 @@ function App() {
     if (!snapshot) return;
     const multi = shownFiles.length > 1;
     const byFile = new Map(otherFiles.flatMap((o) => (o.snapshot ? [[o.name, o.snapshot] as const] : [])));
-    const homeLoans = applyFilters([...snapshot.loans, ...[...byFile.values()].flatMap((s) => s.loans)], filters.home);
+    const homeLoans = applyFilters([...snapshot.loans, ...[...byFile.values()].flatMap((s) => s.loans)], filters.home)
+      .filter((l) => fileType === 'All' || fileTypeOf(l.file ?? loans.fileName ?? '') === fileType);
     setExporting(true);
     try {
       await exportToExcel({
@@ -298,7 +312,7 @@ function App() {
               setFilters: (f) => setFilters((all) => ({ ...all, [fg]: f })),
               file: {
                 files: loans.files, fileName: loans.fileName, onFileChange: chooseFile, busy, onDelete: user ? onDeleteFiles : undefined,
-                shown: shownFiles, onShownChange: showFiles, others: otherFiles,
+                shown: shownFiles, onShownChange: showFiles, others: otherFiles, fileType, onFileTypeChange: chooseFileType,
               },
               constraints,
             })
