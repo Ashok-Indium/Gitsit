@@ -4,6 +4,7 @@ import type { Snapshot } from '@/engine/protocol';
 import { REPORT_TABLES } from '@/engine/report-fields';
 
 import { text, type Loan } from './measures';
+import type { PageId } from './pages';
 import type { SheetSummary } from './tables';
 
 export type Filters = Record<string, string[]>;
@@ -14,11 +15,11 @@ export const applyFilters = (loans: Loan[], f: Filters) =>
 export const optionsOf = (loans: Loan[], col: string) =>
   [...new Set(loans.map((l) => text(l, col)).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-export const LINKS = [
-  { label: 'Dynamic Fields', href: 'https://app.fabric.microsoft.com/groups/eb6edf16-f039-4e9e-8d96-75b35e6baeba/reports/0ad31c42-bf51-43fc-84f3-1e7593c6ee04?ctid=0241c0ff-4d5c-47ce-a1fa-a6d7a6adfcdf&pbi_source=linkShare&bookmarkGuid=9ecab3c1-b683-4e2f-baa3-6f1c294efd75' },
-  { label: 'Constants', href: 'https://app.fabric.microsoft.com/groups/eb6edf16-f039-4e9e-8d96-75b35e6baeba/reports/0ad31c42-bf51-43fc-84f3-1e7593c6ee04?ctid=0241c0ff-4d5c-47ce-a1fa-a6d7a6adfcdf&pbi_source=linkShare&bookmarkGuid=9ecab3c1-b683-4e2f-baa3-6f1c294efd75' },
+/** The Home page's link buttons: pages of this app, or an outside site. */
+export const LINKS: ({ label: string; page: PageId } | { label: string; href: string })[] = [
+  { label: 'Dynamic Fields', page: 'edit_fields' },
+  { label: 'Constants', page: 'constraints' },
   { label: 'Manuals', href: 'https://indiumsoft.sharepoint.com/:f:/r/sites/GITSITTeam/Shared%20Documents/General/Manuals?csf=1&web=1&e=3c3vmU' },
-  { label: 'Power Apps', href: 'https://apps.powerapps.com/play/e/default-0241c0ff-4d5c-47ce-a1fa-a6d7a6adfcdf/a/fc11bbe1-2c33-4653-a4ba-91b24225d796?tenantId=0241c0ff-4d5c-47ce-a1fa-a6d7a6adfcdf&hint=3fdbd17b-122f-41a2-aa1a-c3334fe89d3c&sourcetime=1758001936426&source=portal' },
 ];
 
 export const SECTIONS = [

@@ -132,11 +132,13 @@ export function HomePage({ snapshot, editing, filters, setFilters, navigate, fil
       } />
       <div className="flex flex-wrap items-center justify-between gap-300 px-300">
         <nav aria-label="Related reports" className="flex flex-wrap gap-200">
-          {LINKS.map((l) => (
+          {LINKS.map((l) => ('page' in l ? (
+            <button key={l.label} type="button" onClick={() => navigate(l.page)} className={actionBtn}>{l.label}</button>
+          ) : (
             <a key={l.label} href={l.href} target="_blank" rel="noopener noreferrer" className={actionBtn}>
               {l.label}<ExternalLink aria-hidden className="icon-size-100" />
             </a>
-          ))}
+          )))}
         </nav>
         <div role="tablist" aria-label="Sections" className="flex flex-wrap gap-100">
           {SECTIONS.map((x) => (
@@ -165,7 +167,7 @@ export function HomePage({ snapshot, editing, filters, setFilters, navigate, fil
       <div className="flex flex-col gap-300 px-300">
         <VisualFrame title={s.label}>
           {/* Coloured as the Model sheet. */}
-          <LoanTable columns={s.columns} loans={loans} editing={editing} maxHeight={'scenario' in s ? 'max-h-[38vh]' : 'max-h-[62vh]'}
+          <LoanTable columns={s.columns} loans={loans} editing={editing} maxHeight={'scenario' in s ? 'max-h-[45vh]' : 'max-h-[max(360px,calc(100vh-300px))]'}
             summary={multi ? undefined : sheetSummary(snapshot, loans.length)} sheet={multi ? snapshotOf : snapshot}
             fileName={multi ? file.fileName ?? '' : undefined} />
         </VisualFrame>

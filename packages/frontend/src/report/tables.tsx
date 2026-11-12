@@ -6,14 +6,14 @@ import { useMemo, useState } from 'react';
 
 import { EditableValue } from '@/components/editable-value';
 import { excelDisplay } from '@/engine/excel-format';
-import MODEL_FORMATS from '@/engine/generated/model-formats.json';
 import { FIELD_BY_LABEL, STRIP_MONTHS, type Scenario } from '@/engine/model-schema';
 import { isError, type CellChange, type CellOut, type CellRef, type Override, type Snapshot } from '@/engine/protocol';
 import { cn } from '@/lib/utils';
 
 import { pbiFormat } from './format';
-import { cfTotal, type Loan, type MeasureDef } from './measures';
-import { duplicatesOf, headerStyle, loanCellStyle, type SheetContext } from './sheet-style';
+import { cellOf, fmtOf, sheetFormat, type SheetRow } from './home-cells';
+import type { Loan, MeasureDef } from './measures';
+import { headerStyle, loanCellStyle, sheetContext, type SheetContext } from './sheet-style';
 
 export interface Editing {
   overrides: Map<string, Override>;
@@ -26,17 +26,7 @@ export interface Editing {
   onOpenLoan: (row: number) => void;
 }
 
-const CF_TOTAL = /^(Perf|Payoff|REO|NPL) CF Total$/;
-const cellOf = (l: Loan, label: string): CellOut => {
-  const m = CF_TOTAL.exec(label);
-  if (m) return cfTotal(l, m[1] as Scenario);
-  return l.values[FIELD_BY_LABEL[label].col];
-};
-const fmtOf = (label: string) => (CF_TOTAL.test(label) ? '#,##0.00' : FIELD_BY_LABEL[label].fmt);
 const sortKey = (v: CellOut) => (typeof v === 'number' ? v : typeof v === 'string' ? v.toLowerCase() : -Infinity);
-
-type SheetRow = 'loan' | 'average' | 'total';
-const SHEET_FORMATS = MODEL_FORMATS as Record<string, Record<SheetRow, string>>;
 
 /**
  * A value as the Model sheet shows it, in that column's Excel number format (the Average and Total
@@ -47,8 +37,7 @@ function modelText(label: string, v: CellOut, row: SheetRow = 'loan'): string {
   const numeric = !!fmtOf(label);
   if (row === 'loan' && numeric && (v == null || v === '')) v = 0;
   if (v != null && isError(v)) return v.error;
-  const formats = FIELD_BY_LABEL[label] && SHEET_FORMATS[FIELD_BY_LABEL[label].col];
-  const fmt = formats ? (row === 'loan' ? formats.loan : formats[row] || formats.loan) : '';
+  const fmt = sheetFormat(label, row);
   return fmt ? excelDisplay(v, fmt) : pbiFormat(v, fmtOf(label));
 }
 
@@ -101,14 +90,7 @@ export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]',
     return (l: Loan): SheetContext => {
       const s = snapshotOf(l);
       let c = made.get(s);
-      if (!c) {
-        const dups = new Map<string, Set<string>>();
-        c = {
-          snapshot: s, overrides: new Map(s.overrides.map((o) => [`${o.col}${o.row}`, o])),
-          duplicates: (col) => dups.get(col) ?? dups.set(col, duplicatesOf(s.loans, col)).get(col)!,
-        };
-        made.set(s, c);
-      }
+      if (!c) made.set(s, c = sheetContext(s));
       return c;
     };
   }, [sheet]);

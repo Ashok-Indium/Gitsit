@@ -101,12 +101,12 @@
 
   /* Font Sizes — 100-based scale 
      Usage: text-* (e.g. text-300, text-hero-900) */
-  --text-100: 10px;
-  --text-200: 12px;
-  --text-300: 14px;
-  --text-400: 16px;
-  --text-500: 20px;
-  --text-600: 24px;
+  --text-100: 11px;
+  --text-200: 13px;
+  --text-300: 15px;
+  --text-400: 17px;
+  --text-500: 21px;
+  --text-600: 25px;
   --text-hero-700: 28px;
   --text-hero-800: 32px;
   --text-hero-900: 40px;
@@ -114,12 +114,12 @@
 
   /* Line Heights — paired with font sizes
      Usage: leading-* (e.g. leading-300) */
-  --leading-100: 14px;
-  --leading-200: 16px;
-  --leading-300: 20px;
-  --leading-400: 22px;
-  --leading-500: 28px;
-  --leading-600: 32px;
+  --leading-100: 15px;
+  --leading-200: 18px;
+  --leading-300: 22px;
+  --leading-400: 24px;
+  --leading-500: 29px;
+  --leading-600: 33px;
   --leading-hero-700: 36px;
   --leading-hero-800: 40px;
   --leading-hero-900: 52px;

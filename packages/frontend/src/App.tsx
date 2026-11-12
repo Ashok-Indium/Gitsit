@@ -17,7 +17,7 @@ import { exportToExcel } from '@/lib/export-excel';
 import { cn } from '@/lib/utils';
 import { pbiFormat } from '@/report/format';
 import type { ConstraintsChoice } from '@/report/constraints';
-import { PAGES, type Filters, type PageId } from '@/report/pages';
+import { applyFilters, PAGES, type Filters, type PageId } from '@/report/pages';
 import type { Editing } from '@/report/tables';
 
 const navItem = 'flex w-full items-center gap-200 rounded-md px-300 py-200 text-left text-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -154,10 +154,23 @@ function App() {
   const fg = page.filterGroup === 'none' ? 'analysis' : page.filterGroup;
 
   const go = (id: PageId) => { setPageId(id); window.scrollTo(0, 0); };
+  // The Home page's five sections, with the loans it shows (its filters and ticked files).
+  const othersCalculating = otherFiles.some((o) => !o.snapshot && !o.error);
   const onExport = async () => {
-    if (!snapshot || !info) return;
+    if (!snapshot) return;
+    const multi = shownFiles.length > 1;
+    const byFile = new Map(otherFiles.flatMap((o) => (o.snapshot ? [[o.name, o.snapshot] as const] : [])));
+    const homeLoans = applyFilters([...snapshot.loans, ...[...byFile.values()].flatMap((s) => s.loans)], filters.home);
     setExporting(true);
-    try { await exportToExcel(snapshot, info.sourceTape); } finally { setExporting(false); }
+    try {
+      await exportToExcel({
+        loans: homeLoans, snapshotOf: (l) => (l.file && byFile.get(l.file)) || snapshot,
+        summary: multi ? undefined : snapshot.summary, fileColumn: multi ? loans.fileName ?? '' : undefined,
+        title: multi ? `${shownFiles.length} files` : loans.fileName ?? 'Bid Model',
+      });
+    } finally {
+      setExporting(false);
+    }
   };
 
   const main = PAGES.filter((p) => p.group === 'main');
@@ -220,7 +233,8 @@ function App() {
               {isDark ? <Sun className="icon-size-200" /> : <Moon className="icon-size-200" />}
             </button>
           </div>
-          <button type="button" disabled={busy || exporting || !snapshot} onClick={() => void onExport()}
+          <button type="button" disabled={busy || exporting || !snapshot || othersCalculating} onClick={() => void onExport()}
+            title="The Home page's sections (Model Output and the four DCF sections), one sheet each, with the loans it shows"
             className="inline-flex items-center justify-center gap-200 rounded-md bg-primary px-300 py-200 text-300 font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
             {exporting ? <Loader2 className="icon-size-200 animate-spin" /> : <Download className="icon-size-200" />} Export to Excel
           </button>
@@ -242,7 +256,7 @@ function App() {
           </button>
         </div>
 
-        <main className="mx-auto w-full max-w-[1280px] flex-1">
+        <main className="w-full min-w-0 flex-1">
           {engine.error && (
             <div role="alert" className="m-300 rounded-lg border border-destructive bg-card p-400 text-300 text-destructive">
               {status === 'error' ? "The model couldn't be loaded: " : "That change couldn't be applied: "}{engine.error}

@@ -122,16 +122,29 @@ const css = (s: SheetStyle | undefined): CSSProperties => ({
 });
 
 /** The sheet's style for a column's header, Average or Total cell. */
-export function headerStyle(col: string | undefined, row: 'header' | 'average' | 'total'): CSSProperties {
-  return css(col ? STYLES.columns[col]?.[row] : undefined);
+export function columnStyle(col: string | undefined, row: 'header' | 'average' | 'total'): SheetStyle | undefined {
+  return col ? STYLES.columns[col]?.[row] : undefined;
 }
+
+export const headerStyle = (col: string | undefined, row: 'header' | 'average' | 'total'): CSSProperties => css(columnStyle(col, row));
+
+/** What a snapshot's loans are coloured against: its overrides and, per column, its duplicate values. */
+export function sheetContext(snapshot: Snapshot): SheetContext {
+  const dups = new Map<string, Set<string>>();
+  return {
+    snapshot, overrides: new Map(snapshot.overrides.map((o) => [`${o.col}${o.row}`, o])),
+    duplicates: (col) => dups.get(col) ?? dups.set(col, duplicatesOf(snapshot.loans, col)).get(col)!,
+  };
+}
+
+export const loanCellStyle = (col: string | undefined, loan: Loan, ctx: SheetContext): CSSProperties => css(loanSheetStyle(col, loan, ctx));
 
 /**
  * A loan cell's style: its column's style on the sheet, under the conditional formats that hold
  * for this loan (the first rule that sets a property wins, as in Excel), under the override style
  * when the user has typed a value over the cell.
  */
-export function loanCellStyle(col: string | undefined, loan: Loan, ctx: SheetContext): CSSProperties {
+export function loanSheetStyle(col: string | undefined, loan: Loan, ctx: SheetContext): SheetStyle {
   const column = col ? STYLES.columns[col] : undefined;
   if (!col || !column) return {};
   const out: SheetStyle = {};
@@ -151,7 +164,7 @@ export function loanCellStyle(col: string | undefined, loan: Loan, ctx: SheetCon
     }
   }
   if (column.loan) apply(column.loan);
-  return css(out);
+  return out;
 }
 
 /** The values more than one loan has in `col`, for the duplicate-value rules. */
