@@ -32,6 +32,8 @@ export interface InputLoans {
   fileName: string | null;
   /** The selected file's stored model constants (Constraints.BPL_ConstraintValues) by Field_Index. */
   constants: FileConstants;
+  /** Any input file's loans, lookups and constants, to calculate it beside the selected one (null before they are read). */
+  inputFor: (fileName: string) => EngineInput | null;
   /** Records constants this app has just saved for a file, so they are not taken for someone else's change. */
   rememberConstants: (fileName: string, values: FileConstants) => void;
   /** Why the model constants could not be read (every file calculates with the Model sheet's). */
@@ -157,15 +159,16 @@ export function useInputLoans(fileName: string | null): InputLoans {
 
   const files = useMemo(() => (rows ? inputFiles(rows) : []), [rows]);
   const selected = files.find((f) => f.name === fileName)?.name ?? files.find((f) => f.name === FILE_NAME)?.name ?? files[0]?.name ?? null;
-  const input = useMemo<EngineInput | null>(() => (rows && selected
+  const inputFor = useCallback((file: string): EngineInput | null => (rows
     ? {
-      rows: rows.filter((r) => String(r.File_Name ?? FILE_NAME) === selected), source: fromFabric ? FABRIC_SOURCE : 'Bundled input file (Fabric unavailable)',
-      lookups, fileName: selected, constants: () => constantsOf(selected),
+      rows: rows.filter((r) => String(r.File_Name ?? FILE_NAME) === file), source: fromFabric ? FABRIC_SOURCE : 'Bundled input file (Fabric unavailable)',
+      lookups, fileName: file, constants: () => constantsOf(file),
     }
-    : null), [rows, selected, fromFabric, lookups, constantsOf]);
+    : null), [rows, fromFabric, lookups, constantsOf]);
+  const input = useMemo(() => (selected ? inputFor(selected) : null), [selected, inputFor]);
 
   return {
-    input, files, fileName: selected, constants: (selected && known.get(selected)) || NONE, rememberConstants,
+    input, inputFor, files, fileName: selected, constants: (selected && known.get(selected)) || NONE, rememberConstants,
     constraintsError, error, lookupError, updated,
   };
 }

@@ -67,17 +67,23 @@ export interface SheetSummary {
   note?: string;
 }
 
+/** A table row's identity: other files' loans (marked with their file) can share a Model row. */
+const rowKey = (l: Loan) => `${l.file ?? ''}|${l.row}`;
+
 /**
  * A Power BI table visual over loans, with click-to-override cells for editable columns. Given the
- * model's `sheet` snapshot, it is coloured as the Model sheet is, conditional formats included.
+ * model's `sheet` snapshot (or each loan's, when they come from several files), it is coloured as
+ * the Model sheet is, conditional formats included. With `fileName` (the model's own file) it has
+ * a File Name column; loans of other files (marked with their `file`) are read-only.
  */
-export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]', summary, sheet }: {
+export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]', summary, sheet, fileName }: {
   columns: readonly string[];
   loans: Loan[];
   editing: Editing;
   maxHeight?: string;
   summary?: SheetSummary;
-  sheet?: Snapshot;
+  sheet?: Snapshot | ((l: Loan) => Snapshot);
+  fileName?: string;
 }) {
   const [sort, setSort] = useState<{ col: string; dir: 1 | -1 } | null>(null);
   const rows = useMemo(() => {
@@ -87,20 +93,34 @@ export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]',
       return (x < y ? -1 : x > y ? 1 : 0) * sort.dir;
     });
   }, [loans, sort]);
-  // The sheet's rules see every loan in the file, as on the sheet, whatever the filters show.
-  const context = useMemo<SheetContext | null>(() => {
+  // The sheet's rules see every loan in the loan's file, as on the sheet, whatever the filters show.
+  const contextOf = useMemo(() => {
     if (!sheet) return null;
-    const dups = new Map<string, Set<string>>();
-    return {
-      snapshot: sheet, overrides: editing.overrides,
-      duplicates: (col) => dups.get(col) ?? dups.set(col, duplicatesOf(sheet.loans, col)).get(col)!,
+    const snapshotOf = typeof sheet === 'function' ? sheet : () => sheet;
+    const made = new Map<Snapshot, SheetContext>();
+    return (l: Loan): SheetContext => {
+      const s = snapshotOf(l);
+      let c = made.get(s);
+      if (!c) {
+        const dups = new Map<string, Set<string>>();
+        c = {
+          snapshot: s, overrides: new Map(s.overrides.map((o) => [`${o.col}${o.row}`, o])),
+          duplicates: (col) => dups.get(col) ?? dups.set(col, duplicatesOf(s.loans, col)).get(col)!,
+        };
+        made.set(s, c);
+      }
+      return c;
     };
-  }, [sheet, editing.overrides]);
+  }, [sheet]);
   const toggle = (col: string) => setSort((s) => (s?.col === col ? (s.dir === 1 ? { col, dir: -1 } : null) : { col, dir: 1 }));
 
   if (!loans.length) return <p className="py-800 text-center text-300 text-muted-foreground">No loans match the current filters.</p>;
-  const styled = !!context;
+  const styled = !!contextOf;
   const firstCol = FIELD_BY_LABEL[columns[0]]?.col;
+  const fileHead = fileName !== undefined && (
+    <th key="__file" scope="col" style={styled ? headerStyle(firstCol, 'header') : undefined}
+      className={cn(styled ? sheetTh : th, 'text-left')}>File Name</th>
+  );
   return (
     <div className={cn('overflow-auto', maxHeight, styled && 'bg-sheet font-sheet text-sheet-foreground')}>
       <table className="min-w-full border-separate border-spacing-0 text-200">
@@ -134,7 +154,7 @@ export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]',
               const f = FIELD_BY_LABEL[c];
               const numeric = !!fmtOf(c);
               return (
-                <th key={c} scope="col" aria-sort={sort?.col === c ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}
+                [<th key={c} scope="col" aria-sort={sort?.col === c ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'}
                   style={styled ? headerStyle(f?.col, 'header') : undefined}
                   className={cn(styled ? sheetTh : th, numeric ? 'text-right' : 'text-left', i === 0 && cn('sticky left-0 z-10', !styled && 'bg-card'))}>
                   <button type="button" onClick={() => toggle(c)}
@@ -143,38 +163,47 @@ export function LoanTable({ columns, loans, editing, maxHeight = 'max-h-[60vh]',
                     {f?.editable && <PencilLine aria-label="editable" className={cn('icon-size-100 shrink-0', !styled && 'text-primary')} />}
                     {sort?.col === c && (sort.dir === 1 ? <ArrowUp className="icon-size-100 shrink-0" /> : <ArrowDown className="icon-size-100 shrink-0" />)}
                   </button>
-                </th>
+                </th>, i === 0 && fileHead]
               );
             })}
           </tr>
         </thead>
         <tbody>
           {rows.map((l) => (
-            <tr key={l.row} className={styled ? 'hover:bg-sheet-hover' : 'hover:bg-hover'}>
+            <tr key={rowKey(l)} className={styled ? 'hover:bg-sheet-hover' : 'hover:bg-hover'}>
               {columns.map((c, i) => {
                 const f = FIELD_BY_LABEL[c];
                 const v = cellOf(l, c);
                 const numeric = !!fmtOf(c);
-                const style = context ? loanCellStyle(f?.col, l, context) : undefined;
+                const style = contextOf ? loanCellStyle(f?.col, l, contextOf(l)) : undefined;
+                // Another file's loan: shown, not edited (its own file is edited when that file is opened).
+                const readOnly = !!l.file;
+                const fileCell = i === 0 && fileName !== undefined && (
+                  <td key="__file" className={cn(styled ? sheetTd : td, 'max-w-56 truncate')} title={l.file ?? fileName}>{l.file ?? fileName}</td>
+                );
                 if (i === 0 && c === 'Loan ID') {
-                  return (
+                  return [
                     <td key={c} style={style} className={cn(styled ? sheetTd : td, 'sticky left-0', styled ? !style?.backgroundColor && 'bg-sheet' : 'bg-card')}>
-                      <button type="button" onClick={() => editing.onOpenLoan(l.row)}
-                        className={cn('focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                          styled ? 'underline decoration-dotted underline-offset-2 hover:decoration-solid' : 'font-semibold text-primary hover:underline')}>{String(v ?? '')}</button>
-                    </td>
-                  );
+                      {readOnly ? String(v ?? '') : (
+                        <button type="button" onClick={() => editing.onOpenLoan(l.row)}
+                          className={cn('focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                            styled ? 'underline decoration-dotted underline-offset-2 hover:decoration-solid' : 'font-semibold text-primary hover:underline')}>{String(v ?? '')}</button>
+                      )}
+                    </td>,
+                    fileCell,
+                  ];
                 }
-                return (
+                return [
                   <td key={c} style={style} className={cn(styled ? sheetTd : td, numeric && 'text-right tabular-nums')}>
-                    {f?.editable ? (
+                    {f?.editable && !readOnly ? (
                       <EditableValue field={f} value={v} override={editing.overrides.get(`${f.col}${l.row}`)} disabled={editing.busy}
                         align={numeric ? 'right' : 'left'} format={(x) => modelText(c, x)} tone={styled ? 'sheet' : 'app'}
                         onCommit={(value) => editing.onCommit(l.row, f.col, value)}
                         onReset={() => editing.onReset(l.row, f.col)} />
                     ) : modelText(c, v)}
-                  </td>
-                );
+                  </td>,
+                  fileCell,
+                ];
               })}
             </tr>
           ))}
@@ -245,7 +274,7 @@ export function CashFlowPivot({ loans, scenario, sheet }: { loans: Loan[]; scena
           {loans.map((l) => {
             const s = l.strips[scenario];
             return (
-              <tr key={l.row} className={sheet ? 'hover:bg-sheet-hover' : 'hover:bg-hover'}>
+              <tr key={rowKey(l)} className={sheet ? 'hover:bg-sheet-hover' : 'hover:bg-hover'}>
                 <th scope="row" className={cn(cell, 'sticky left-0 text-left font-normal', pinned)}>{String(l.values.A ?? '')}</th>
                 {s.map((v, m) => <td key={m} className={cn(cell, 'text-right')}>{v ? pbiFormat(v, CF_FMT) : ''}</td>)}
                 <td className={cn(cell, 'text-right font-semibold')}>{pbiFormat(s.reduce((a, b) => a + b, 0), CF_FMT)}</td>

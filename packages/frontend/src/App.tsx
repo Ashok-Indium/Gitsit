@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/theme.context';
 import { getRayfinClient } from '@/lib/rayfin-client';
 import { deleteFiles, displayName, type ConstraintEdit } from '@/store/shared-model';
 import { FABRIC_SOURCE, useInputLoans } from '@/store/use-input-loans';
+import { useOtherFiles } from '@/store/use-other-files';
 import { useSharedModel, type StoreStatus } from '@/store/use-shared-model';
 import { exportToExcel } from '@/lib/export-excel';
 import { cn } from '@/lib/utils';
@@ -66,13 +67,30 @@ function App() {
   const [showChanges, setShowChanges] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  const chooseFile = (name: string) => {
+  // The files the Home page shows (the model's own among them; just it when empty).
+  const [shownChoice, setShownChoice] = useState<string[]>([]);
+  const switchFile = (name: string) => {
     if (name === loans.fileName) return;
     setFileChoice(name);
     // Another file's loans: its pools and states differ, so start with no filters.
     setFilters({ home: {}, analysis: {} });
     try { localStorage.setItem(FILE_CHOICE_KEY, name); } catch { /* remembered for this visit only */ }
   };
+  const chooseFile = (name: string) => {
+    switchFile(name);
+    setShownChoice([]);
+  };
+  // Ticking files on the Home page: unticking the model's own file moves the model to the first one left.
+  const showFiles = (names: string[]) => {
+    if (loans.fileName && !names.includes(loans.fileName)) switchFile(names[0]);
+    setShownChoice(names);
+  };
+  const shownFiles = useMemo(() => {
+    const exists = new Set(loans.files.map((f) => f.name));
+    const list = shownChoice.filter((n) => exists.has(n));
+    return loans.fileName && !list.includes(loans.fileName) ? [loans.fileName, ...list] : list;
+  }, [shownChoice, loans.files, loans.fileName]);
+  const otherFiles = useOtherFiles(shownFiles.filter((n) => n !== loans.fileName), loans.inputFor, !!user);
   const filePicker = (id: string) => (
     <>
       <label className="sr-only" htmlFor={id}>Input file</label>
@@ -264,7 +282,10 @@ function App() {
               snapshot, editing, navigate: go,
               filters: filters[fg],
               setFilters: (f) => setFilters((all) => ({ ...all, [fg]: f })),
-              file: { files: loans.files, fileName: loans.fileName, onFileChange: chooseFile, busy, onDelete: user ? onDeleteFiles : undefined },
+              file: {
+                files: loans.files, fileName: loans.fileName, onFileChange: chooseFile, busy, onDelete: user ? onDeleteFiles : undefined,
+                shown: shownFiles, onShownChange: showFiles, others: otherFiles,
+              },
               constraints,
             })
           ) : status !== 'error' && (

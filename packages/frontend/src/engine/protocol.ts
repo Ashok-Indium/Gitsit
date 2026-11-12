@@ -13,6 +13,11 @@ export interface LoanSnapshot {
   values: Record<string, CellOut>;
   /** Monthly cash flows, months 1-36, per exit scenario. */
   strips: Record<Scenario, number[]>;
+  /**
+   * The input file of a loan shown beside other files' loans (the Home page with several files
+   * ticked); unset on the loans of the model being edited.
+   */
+  file?: string;
 }
 
 export interface Override {

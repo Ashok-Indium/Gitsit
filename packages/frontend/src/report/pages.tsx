@@ -1,6 +1,6 @@
 // The GITSITFINAL report pages, laid out after the report's own visual positions (1280x720 canvas).
 
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Loader2 } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 
 import clearFilterIcon from '@/assets/clear-filter.png';
@@ -18,7 +18,8 @@ import { pbiAuto, pbiFormat } from './format';
 import { binLoans, cumulative, HISTOGRAMS, type HistogramDef } from './histograms';
 import { groupBy, MEASURES, num, text, type Loan, type MeasureKey } from './measures';
 import { CashFlowPivot, LoanTable, MeasureMatrix, type Editing } from './tables';
-import { CardGroup, FileSlicer, PageBanner, Slicer, VisualFrame, type InputFileOption } from './visuals';
+import { CardGroup, FileMultiSlicer, FileSlicer, PageBanner, Slicer, VisualFrame, type InputFileOption } from './visuals';
+import type { FileView } from '@/store/use-other-files';
 
 // ---------- slicers ----------
 
@@ -41,6 +42,11 @@ export interface FileChoice {
   busy: boolean;
   /** Deletes input files from the app and its tables; absent when they can't be (not signed in). */
   onDelete?: (names: string[]) => Promise<void>;
+  /** The files whose loans the Home page shows, the model's own among them (just it when unset). */
+  shown?: string[];
+  onShownChange?: (names: string[]) => void;
+  /** The other shown files, each calculated beside the model. */
+  others?: FileView[];
 }
 
 export interface PageProps {
@@ -65,11 +71,22 @@ function AnalysisSlicers({ snapshot, filters, setFilters }: Pick<PageProps, 'sna
   );
 }
 
-function HomeSlicers({ snapshot, filters, setFilters, file, extra }: Pick<PageProps, 'snapshot' | 'filters' | 'setFilters' | 'file'> & { extra?: ReactNode }) {
+function HomeSlicers({ snapshot, filters, setFilters, file, extra, loans = snapshot.loans, multi }: Pick<PageProps, 'snapshot' | 'filters' | 'setFilters' | 'file'> & {
+  extra?: ReactNode;
+  /** The loans the Pool options come from (several files' on the Home page). */
+  loans?: Loan[];
+  /** Several files can be ticked (the Home page); elsewhere the slicer picks the model's file. */
+  multi?: boolean;
+}) {
   return (
     <div className="flex flex-wrap items-end gap-300 px-300">
-      <FileSlicer className="w-full sm:w-[457px]" files={file.files} value={file.fileName} onChange={file.onFileChange} disabled={file.busy} />
-      <Slicer label="Pool" className="w-48" options={optionsOf(snapshot.loans, 'Pool')} selected={filters.Pool ?? []}
+      {multi && file.onShownChange ? (
+        <FileMultiSlicer className="w-full sm:w-[457px]" files={file.files} selected={file.shown ?? (file.fileName ? [file.fileName] : [])}
+          onChange={file.onShownChange} disabled={file.busy} />
+      ) : (
+        <FileSlicer className="w-full sm:w-[457px]" files={file.files} value={file.fileName} onChange={file.onFileChange} disabled={file.busy} />
+      )}
+      <Slicer label="Pool" className="w-48" options={optionsOf(loans, 'Pool')} selected={filters.Pool ?? []}
         onChange={(v) => setFilters({ ...filters, Pool: v })} />
       {extra}
     </div>
@@ -89,11 +106,21 @@ const actionBtn = 'inline-flex items-center justify-center gap-100 rounded-2xl b
 export function HomePage({ snapshot, editing, filters, setFilters, navigate, file }: PageProps) {
   const [section, setSection] = useState<SectionId>('output');
   const s = SECTIONS.find((x) => x.id === section)!;
-  const loans = applyFilters(snapshot.loans, filters);
+  // The model's loans, then those of the other ticked files (each marked with its file).
+  const others = useMemo(() => file.others ?? [], [file.others]);
+  const all = useMemo(() => [...snapshot.loans, ...others.flatMap((o) => o.snapshot?.loans ?? [])], [snapshot, others]);
+  const snapshotOf = useMemo(() => {
+    const byFile = new Map(others.flatMap((o) => (o.snapshot ? [[o.name, o.snapshot] as const] : [])));
+    return (l: Loan) => (l.file && byFile.get(l.file)) || snapshot;
+  }, [snapshot, others]);
+  const loans = applyFilters(all, filters);
+  const multi = (file.shown?.length ?? 1) > 1;
+  const calculating = others.filter((o) => !o.snapshot && !o.error).map((o) => o.name);
+  const failed = others.filter((o) => o.error);
   return (
     <div className="flex flex-col gap-300 bg-card pb-300">
       <PageBanner title="GITSIT Bid Model Dashboard" />
-      <HomeSlicers snapshot={snapshot} filters={filters} setFilters={setFilters} file={file} extra={
+      <HomeSlicers snapshot={snapshot} loans={all} multi filters={filters} setFilters={setFilters} file={file} extra={
         <>
           <button type="button" title="Clear Filters" aria-label="Clear filters" onClick={() => setFilters({})}
             className="mb-100 rounded-md p-100 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -121,11 +148,26 @@ export function HomePage({ snapshot, editing, filters, setFilters, navigate, fil
           ))}
         </div>
       </div>
+      {(multi || calculating.length > 0 || failed.length > 0) && (
+        <div aria-live="polite" className="flex flex-col gap-100 px-300 text-200 text-muted-foreground">
+          {calculating.length > 0 && (
+            <p className="flex items-center gap-200"><Loader2 className="icon-size-200 animate-spin" /> Calculating {calculating.join(', ')}…</p>
+          )}
+          {failed.map((o) => <p key={o.name} role="alert" className="text-destructive">Couldn't calculate {o.name}: {o.error}</p>)}
+          {multi && (
+            <p>
+              Showing {file.shown!.length} files. Only {file.fileName}'s loans can be edited here; the other files' loans are
+              read-only (pick a file in the side panel to work on it). The sheet's Average and Total rows show when one file is ticked.
+            </p>
+          )}
+        </div>
+      )}
       <div className="flex flex-col gap-300 px-300">
         <VisualFrame title={s.label}>
           {/* Coloured as the Model sheet. */}
           <LoanTable columns={s.columns} loans={loans} editing={editing} maxHeight={'scenario' in s ? 'max-h-[38vh]' : 'max-h-[62vh]'}
-            summary={sheetSummary(snapshot, loans.length)} sheet={snapshot} />
+            summary={multi ? undefined : sheetSummary(snapshot, loans.length)} sheet={multi ? snapshotOf : snapshot}
+            fileName={multi ? file.fileName ?? '' : undefined} />
         </VisualFrame>
         {'scenario' in s && (
           <VisualFrame title={`${s.scenario} Cash Flows by Month`}>

@@ -159,7 +159,73 @@ export function FileSlicer({ files, value, onChange, disabled, className, label 
   );
 }
 
-function SlicerOption({ label, checked, onClick }: { label: string; checked: boolean; onClick: () => void }) {
+/**
+ * Multi-choice slicer for input files, with a search box: the Home page shows the loans of every
+ * ticked file. At least one file stays ticked.
+ */
+export function FileMultiSlicer({ files, selected, onChange, disabled, className, label = 'File Name' }: {
+  files: InputFileOption[];
+  selected: string[];
+  onChange: (names: string[]) => void;
+  disabled?: boolean;
+  className?: string;
+  label?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+  const listId = useId();
+  // Closing clears the search, so the list opens whole next time.
+  const setShown = (next: boolean) => { setOpen(next); if (!next) setQuery(''); };
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) { setOpen(false); setQuery(''); } };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') { setOpen(false); setQuery(''); } };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', esc); };
+  }, [open]);
+  const shown = useMemo(() => files.filter((f) => f.name.toLowerCase().includes(query.trim().toLowerCase())), [files, query]);
+  const chosen = files.filter((f) => selected.includes(f.name));
+  const summary = chosen.length === 1 ? `${chosen[0].name} (${chosen[0].loans} loans)`
+    : `${chosen.length} files (${chosen.reduce((s, f) => s + f.loans, 0)} loans)`;
+  const toggle = (name: string) => {
+    const next = selected.includes(name) ? selected.filter((s) => s !== name) : [...selected, name];
+    if (next.length) onChange(next);
+  };
+  const all = files.length > 0 && chosen.length === files.length;
+
+  return (
+    <div ref={ref} className={cn('relative flex min-w-0 flex-col gap-100', className)}>
+      <span className="text-200 font-bold text-foreground">{label}</span>
+      <button type="button" aria-haspopup="listbox" aria-expanded={open} aria-controls={listId} disabled={disabled || !files.length}
+        aria-label={`${label}: ${files.length ? summary : 'no input files'}`}
+        className="flex items-center justify-between gap-200 rounded-sm border border-input bg-card px-200 py-100 text-left text-300 hover:border-foreground/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+        onClick={() => setShown(!open)}>
+        <span className="truncate">{files.length ? summary : 'No input files'}</span>
+        <ChevronDown className="icon-size-200 shrink-0 text-muted-foreground" />
+      </button>
+      {open && (
+        <div className="absolute top-full z-30 mt-100 w-full min-w-64 rounded-sm border border-border bg-popover p-100 shadow-lg">
+          <label className="mb-100 flex items-center gap-200 border-b border-border px-200 pb-100">
+            <Search className="icon-size-200 text-muted-foreground" />
+            <input autoFocus type="search" aria-label={`Search ${label}`} placeholder="Search files" value={query}
+              onChange={(e) => setQuery(e.target.value)} className="w-full bg-transparent py-100 text-300 outline-none" />
+          </label>
+          <ul id={listId} role="listbox" aria-multiselectable className="max-h-64 overflow-y-auto">
+            {!query && <SlicerOption label="Select all" checked={all} onClick={() => onChange(all ? [selected[0] ?? files[0].name] : files.map((f) => f.name))} />}
+            {shown.map((f) => (
+              <SlicerOption key={f.name} label={f.name} detail={`${f.loans} loans`} checked={selected.includes(f.name)} onClick={() => toggle(f.name)} />
+            ))}
+            {!shown.length && <li className="px-200 py-200 text-200 text-muted-foreground">No file matches “{query}”.</li>}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SlicerOption({ label, detail, checked, onClick }: { label: string; detail?: string; checked: boolean; onClick: () => void }) {
   return (
     <li role="option" aria-selected={checked}>
       <button type="button" onClick={onClick}
@@ -167,7 +233,8 @@ function SlicerOption({ label, checked, onClick }: { label: string; checked: boo
         <span className={cn('flex icon-size-200 shrink-0 items-center justify-center rounded-sm border', checked ? 'border-foreground bg-foreground text-background' : 'border-muted-foreground')}>
           {checked && <Check className="icon-size-100" />}
         </span>
-        <span className="truncate">{label}</span>
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        {detail && <span className="shrink-0 text-200 text-muted-foreground">{detail}</span>}
       </button>
     </li>
   );
