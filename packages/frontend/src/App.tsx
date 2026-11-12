@@ -8,7 +8,8 @@ import type { Constants, Override } from '@/engine/protocol';
 import { useModelEngine } from '@/engine/use-model-engine';
 import { AuthContext } from '@/hooks/auth.context';
 import { useTheme } from '@/hooks/theme.context';
-import { displayName, type ConstraintEdit } from '@/store/shared-model';
+import { getRayfinClient } from '@/lib/rayfin-client';
+import { deleteFiles, displayName, type ConstraintEdit } from '@/store/shared-model';
 import { FABRIC_SOURCE, useInputLoans } from '@/store/use-input-loans';
 import { useSharedModel, type StoreStatus } from '@/store/use-shared-model';
 import { exportToExcel } from '@/lib/export-excel';
@@ -121,6 +122,15 @@ function App() {
       const why = done.error ?? (shared.status.state === 'error' ? shared.status.message : 'not signed in');
       return { saved: done.saved, message: done.saved ? `${what} Saved for this file in Fabric.` : `${what} Not saved to Fabric (${why}); Apply again to retry.` };
     },
+  };
+  // Removes the files from every Fabric table at once, then reloads so the app reads what is left.
+  const onDeleteFiles = async (names: string[]) => {
+    if (shared.status.state === 'saving') throw new Error('changes are still being saved; try again in a moment');
+    await deleteFiles(await getRayfinClient(), names);
+    if (fileChoice && names.includes(fileChoice)) {
+      try { localStorage.removeItem(FILE_CHOICE_KEY); } catch { /* the app picks another file anyway */ }
+    }
+    window.location.reload();
   };
   const loan = snapshot?.loans.find((l) => l.row === openLoan) ?? null;
   const fg = page.filterGroup === 'none' ? 'analysis' : page.filterGroup;
@@ -254,7 +264,7 @@ function App() {
               snapshot, editing, navigate: go,
               filters: filters[fg],
               setFilters: (f) => setFilters((all) => ({ ...all, [fg]: f })),
-              file: { files: loans.files, fileName: loans.fileName, onFileChange: chooseFile, busy },
+              file: { files: loans.files, fileName: loans.fileName, onFileChange: chooseFile, busy, onDelete: user ? onDeleteFiles : undefined },
               constraints,
             })
           ) : status !== 'error' && (

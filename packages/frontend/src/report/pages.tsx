@@ -10,6 +10,7 @@ import { REPORT_TABLES } from '@/engine/report-fields';
 import { cn } from '@/lib/utils';
 
 import { ConstraintsPage, type ConstraintsChoice } from './constraints';
+import { DeleteFilesButton } from './delete-files';
 import { EditFieldsPage } from './edit-fields';
 import { ALL_SECTION_COLUMNS, applyFilters, LINKS, optionsOf, SECTIONS, sheetSummary, type Filters, type SectionId } from './home-sections';
 import { BarChart, DistributionChart, type Series } from './charts';
@@ -38,6 +39,8 @@ export interface FileChoice {
   onFileChange: (name: string) => void;
   /** True while the model is being built, when switching files must wait. */
   busy: boolean;
+  /** Deletes input files from the app and its tables; absent when they can't be (not signed in). */
+  onDelete?: (names: string[]) => Promise<void>;
 }
 
 export interface PageProps {
@@ -96,6 +99,7 @@ export function HomePage({ snapshot, editing, filters, setFilters, navigate, fil
             className="mb-100 rounded-md p-100 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <img src={clearFilterIcon} alt="" className="icon-size-600" />
           </button>
+          {file.onDelete && <DeleteFilesButton files={file.files} current={file.fileName} disabled={file.busy} onDelete={file.onDelete} />}
           <button type="button" className={cn(actionBtn, 'ml-auto')} onClick={() => navigate('loanDetail')}>Master Table</button>
         </>
       } />

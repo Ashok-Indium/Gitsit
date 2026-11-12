@@ -25,4 +25,8 @@ export type AppFunctionsSchema = {
     input: { fileName: string; edits: { Field_Index: string; Field_Name_Display: string; New_Value: string }[]; userMail: string };
     output: { saved: number };
   };
+  deleteFiles: {
+    input: { fileNames: string[] };
+    output: { table: string; rows: number }[];
+  };
 };

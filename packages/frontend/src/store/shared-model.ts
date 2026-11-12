@@ -262,6 +262,21 @@ export async function seedInput(client: Client): Promise<void> {
   await inBatches(inputRows as Row[], 5, (r) => insertRow(client, 'Input_table', { Table_Type: TABLE_TYPE, ...r, File_Name: FILE_NAME }));
 }
 
+/** Rows removed from one table when input files are deleted. */
+export interface DeletedRows {
+  table: string;
+  rows: number;
+}
+
+/**
+ * Deletes input files from every table that holds rows per file (Input_table, Loan_Model,
+ * Loan_Model_Monthly, LoanChanges, Input_files and the Constraints tables) in one transaction,
+ * through the app's deleteFiles function.
+ */
+export async function deleteFiles(client: Client, fileNames: string[]): Promise<DeletedRows[]> {
+  return await client.functions.deleteFiles.invoke({ fileNames });
+}
+
 /** The input files in Input_table, by name, with how many loans each holds. */
 export function inputFiles(rows: InputRow[]): { name: string; loans: number }[] {
   const counts = new Map<string, number>();

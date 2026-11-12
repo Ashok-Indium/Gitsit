@@ -1,7 +1,8 @@
 // The model constants of each input file, in the SQL tables Constraints.BPL_ConstraintValues and
 // Constraints.BPL_ConstraintChanges of the app's database gitsit-test. The app's data service only
 // reaches dbo tables, so the Constraints page reads and saves them through these functions, which
-// run SQL as the app identity (the owner of the Fabric app item).
+// run SQL as the app identity (the owner of the Fabric app item). deleteFiles removes input files
+// from every table at once, which the data service can't do in one transaction.
 
 import { AudienceType, UserDataFunctions, type RayfinContext } from '@microsoft/fabric-user-data-functions';
 import sql from 'mssql';
@@ -29,6 +30,17 @@ export interface ConstraintEdit {
 export interface ApplyResult {
   saved: number;
 }
+
+export interface DeletedRows {
+  table: string;
+  rows: number;
+}
+
+/** Every table that holds rows per input file (File_Name), in the order deleteFiles empties them. */
+const FILE_TABLES = [
+  ['dbo', 'InputLoans'], ['dbo', 'LoanModels'], ['dbo', 'LoanModelMonthlies'], ['dbo', 'LoanChanges'], ['dbo', 'Input_files'],
+  ['Constraints', 'BPL_ConstraintValues'], ['Constraints', 'BPL_ConstraintChanges'],
+] as const;
 
 async function connect(ctx: SqlContext): Promise<sql.ConnectionPool> {
   return new sql.ConnectionPool({
@@ -100,6 +112,37 @@ VALUES (@file, @index, @display, @old, @value, @user, SYSUTCDATETIME());`);
       }
       await tx.commit();
       return { saved: rows.length };
+    } catch (e) {
+      await tx.rollback().catch(() => undefined);
+      throw e;
+    } finally {
+      await pool.close();
+    }
+  },
+  [],
+);
+
+// Removes input files from the app: their loans, model rows, change logs, load record and
+// constants, in one transaction (all of it or none). Returns the rows removed per table.
+udf.func(
+  'deleteFiles',
+  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>, fileNames: string[]): Promise<DeletedRows[]> => {
+    if (!Array.isArray(fileNames) || !fileNames.length || fileNames.length > 50) throw new Error('Invalid input.');
+    const files = JSON.stringify([...new Set(fileNames.map((f) => text(f, 200)))]);
+    const pool = await connect(ctx);
+    const tx = new sql.Transaction(pool);
+    try {
+      await tx.begin();
+      const out: DeletedRows[] = [];
+      for (const [schema, table] of FILE_TABLES) {
+        // The loader creates Input_files on its first run, so it may not exist yet.
+        const result = await new sql.Request(tx).input('files', sql.NVarChar(sql.MAX), files)
+          .query(`IF OBJECT_ID(N'[${schema}].[${table}]', N'U') IS NOT NULL
+  DELETE FROM [${schema}].[${table}] WHERE [File_Name] IN (SELECT [value] FROM OPENJSON(@files));`);
+        out.push({ table: `${schema}.${table}`, rows: result.rowsAffected.reduce((a, b) => a + b, 0) });
+      }
+      await tx.commit();
+      return out;
     } catch (e) {
       await tx.rollback().catch(() => undefined);
       throw e;
