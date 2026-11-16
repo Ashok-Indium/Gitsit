@@ -3,11 +3,11 @@
 // Home page's button to it, which shows how the latest uploads are going.
 
 import { AlertTriangle, CheckCircle2, Clock, FileSpreadsheet, Loader2, RefreshCw, Upload as UploadIcon, XCircle } from 'lucide-react';
-import { useRef, useState, type DragEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 import { fileTypeOf } from '@/store/file-type';
-import { isActive, MAX_UPLOAD_MB, uploadProblem, type Upload, type UploadState, type Uploads } from '@/store/use-uploads';
+import { isActive, MAX_UPLOAD_MB, uploadProblem, type Upload, type UploadProblem, type UploadState, type Uploads } from '@/store/use-uploads';
 
 import { PageBanner, VisualFrame } from './visuals';
 
@@ -46,6 +46,69 @@ function details(u: Upload, now: number): ReactNode {
   return u.message;
 }
 
+type Refused = { file: File; problem: UploadProblem };
+
+const ext = (name: string) => /\.[^.]+$/.exec(name)?.[0].toLowerCase() ?? '';
+const code = (s: string) => <code className="rounded-sm bg-muted px-100 font-semibold text-foreground">{s}</code>;
+
+/** How to fix a refused file, in the popup. */
+function fix({ file, problem }: Refused): ReactNode {
+  const name = file.name;
+  switch (problem) {
+    case 'type':
+      return <>Add the file type to the start of its name, then upload it again: {code(`NPL_${name}`)} or {code(`BPL_${name}`)}. The type picks the lookup tables it is calculated with.</>;
+    case 'format':
+      return <>
+        It is {ext(name) ? <>a {code(ext(name))} file</> : 'a file without an extension'}, but only Excel workbooks ({code('.xlsx')}) can be loaded.
+        Open it in Excel, choose File → Save As → Excel Workbook (*.xlsx), and upload that file.
+      </>;
+    case 'name':
+      return <>Its name has a character a Lakehouse file can't have ({code('\\ / : * ? " < > |')}). Rename it without them.</>;
+    case 'size':
+      return <>It is {(file.size / 1024 / 1024).toFixed(1)} MB; the limit is {MAX_UPLOAD_MB} MB.</>;
+    case 'empty':
+      return <>The file is empty.</>;
+  }
+}
+
+/** The popup that says which files weren't uploaded and how to fix them. */
+function RefusedDialog({ refused, sendingOthers, onClose }: { refused: Refused[]; sendingOthers: number; onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (refused.length) dialog.current?.showModal();
+    else dialog.current?.close();
+  }, [refused]);
+  const only = (p: UploadProblem) => refused.every((r) => r.problem === p);
+  const title = only('type') ? 'Please add the file type to the file name'
+    : only('format') ? 'Please upload the correct file format (.xlsx)'
+      : `${refused.length === 1 ? 'This file' : 'These files'} can't be uploaded`;
+  return (
+    <dialog ref={dialog} aria-labelledby="refused-title" onCancel={onClose} onClose={onClose}
+      className="m-auto w-[min(600px,calc(100vw-32px))] rounded-lg border border-visual-border bg-card p-0 text-foreground shadow-xl backdrop:bg-foreground/40">
+      <div className="flex flex-col gap-400 p-500">
+        <h2 id="refused-title" className="flex items-center gap-200 text-500 font-bold text-title">
+          <AlertTriangle className="icon-size-300 shrink-0 text-destructive" /> {title}
+        </h2>
+        <ul className="flex max-h-[60vh] flex-col gap-300 overflow-y-auto">
+          {refused.map((r) => (
+            <li key={r.file.name} className="flex flex-col gap-100 rounded-md border border-destructive/40 bg-destructive/10 p-300 text-200">
+              <span className="break-words text-300 font-semibold">{r.file.name}</span>
+              <span className="leading-300">{fix(r)}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="text-200 text-muted-foreground">
+          File names start with {code('NPL_')} or {code('BPL_')} and end in {code('.xlsx')}, e.g. {code('BPL_Pacific Private Money.xlsx')}.
+          {sendingOthers > 0 && ` The other ${sendingOthers} file${sendingOthers === 1 ? ' is' : 's are'} being uploaded.`}
+        </p>
+        <div className="flex justify-end">
+          <button type="button" autoFocus onClick={onClose} className={cn(btn, 'bg-action text-action-foreground hover:brightness-110')}>OK</button>
+        </div>
+      </div>
+    </dialog>
+  );
+}
+
 /** The Home page's way here: the button, with how the latest uploads are going. */
 export function UploadFilesButton({ uploads, now, onClick }: {
   uploads: Upload[];
@@ -78,6 +141,8 @@ export function UploadPage({ uploads, email, loadedFiles, onOpen }: {
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [sending, setSending] = useState<string[]>([]);
+  // Files refused before uploading (the popup), and files the upload itself failed for.
+  const [refused, setRefused] = useState<{ list: Refused[]; others: number }>({ list: [], others: 0 });
   const [problems, setProblems] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
   const now = uploads.readAt;
@@ -85,14 +150,15 @@ export function UploadPage({ uploads, email, loadedFiles, onOpen }: {
 
   const send = async (list: File[]) => {
     if (!email || busy || !list.length) return;
-    const bad = list.flatMap((f) => { const p = uploadProblem(f); return p ? [`${f.name} ${p}.`] : []; });
+    const bad = list.flatMap((file) => { const problem = uploadProblem(file); return problem ? [{ file, problem }] : []; });
     const good = list.filter((f) => !uploadProblem(f));
-    setProblems(bad);
+    setRefused({ list: bad, others: good.length });
+    setProblems([]);
     if (!good.length) return;
     setSending(good.map((f) => f.name));
     try {
       const failed = await uploads.upload(good, email);
-      setProblems([...bad, ...failed.map((f) => `${f.name} wasn't uploaded: ${f.error}`)]);
+      setProblems(failed.map((f) => `${f.name} wasn't uploaded: ${f.error}`));
     } finally {
       setSending([]);
     }
@@ -105,6 +171,7 @@ export function UploadPage({ uploads, email, loadedFiles, onOpen }: {
 
   return (
     <div className="flex flex-col gap-300 bg-card pb-300">
+      <RefusedDialog refused={refused.list} sendingOthers={refused.others} onClose={() => setRefused({ list: [], others: 0 })} />
       <PageBanner title="Upload Files" />
       <div className="flex flex-col gap-300 px-300">
         <VisualFrame title="Upload input files">

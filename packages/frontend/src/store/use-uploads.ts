@@ -25,13 +25,16 @@ export interface Upload {
 /** The largest file the uploadFile function takes. */
 export const MAX_UPLOAD_MB = 4;
 
-/** Why a file can't be uploaded, or null when it can: an NPL_ or BPL_ .xlsx workbook. */
-export function uploadProblem(file: File): string | null {
-  if (!/\.xlsx$/i.test(file.name)) return 'is not an .xlsx workbook';
-  if (!/^(NPL|BPL)_/i.test(file.name)) return 'must start with NPL_ or BPL_ (that picks its lookup tables)';
-  if (/[/\\:*?"<>|]/.test(file.name)) return 'has a character a Lakehouse file name can\'t have';
-  if (file.size > MAX_UPLOAD_MB * 1024 * 1024) return `is larger than ${MAX_UPLOAD_MB} MB`;
-  if (!file.size) return 'is empty';
+/** Why a file can't be uploaded: not an Excel workbook, no NPL_/BPL_ file type, too large … */
+export type UploadProblem = 'format' | 'type' | 'name' | 'size' | 'empty';
+
+/** What's wrong with a file, or null when it can be uploaded: an NPL_ or BPL_ .xlsx workbook. */
+export function uploadProblem(file: File): UploadProblem | null {
+  if (!/\.xlsx$/i.test(file.name)) return 'format';
+  if (!/^(NPL|BPL)_/i.test(file.name)) return 'type';
+  if (/[/\\:*?"<>|]/.test(file.name)) return 'name';
+  if (file.size > MAX_UPLOAD_MB * 1024 * 1024) return 'size';
+  if (!file.size) return 'empty';
   return null;
 }
 
