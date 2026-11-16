@@ -43,7 +43,8 @@ function paint(cell: Cell, style: SheetStyle | undefined, bold = false) {
 /** A value as Excel stores it: numbers and text as they are, errors as their code. */
 const stored = (v: CellOut): string | number | boolean | null => (v == null ? null : isError(v) ? v.error : v);
 
-export async function exportToExcel(x: HomeExport): Promise<void> {
+/** Builds the Home page's workbook and downloads it; resolves with the file's name. */
+export async function exportToExcel(x: HomeExport): Promise<string> {
   const { default: ExcelJS } = await import('exceljs');
   const wb = new ExcelJS.Workbook();
   wb.created = new Date();
@@ -141,10 +142,32 @@ export async function exportToExcel(x: HomeExport): Promise<void> {
   }
 
   const buf = await wb.xlsx.writeBuffer();
-  const url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  const name = `${x.title.replace(/[\\/:*?"<>|]/g, '-')} - Home.xlsx`;
+  saveFile(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), name);
+  return name;
+}
+
+/**
+ * Hands a file to the browser's downloads. The link has to be in the page when clicked (Firefox),
+ * and its blob URL has to outlive the click until the download has started (Edge, Firefox).
+ */
+function saveFile(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${x.title.replace(/[\\/:*?"<>|]/g, '-')} - Home.xlsx`;
+  a.download = name;
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
+
+/** Inside the Fabric portal the app runs in a frame, which may not be allowed to download files. */
+export const inFrame = () => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+};

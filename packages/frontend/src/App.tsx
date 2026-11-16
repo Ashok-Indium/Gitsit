@@ -16,7 +16,7 @@ import { fileTypeOf } from '@/store/file-type';
 import type { FileTypeChoice } from '@/report/pages';
 import { useSharedModel, type StoreStatus } from '@/store/use-shared-model';
 import { isActive, useUploads } from '@/store/use-uploads';
-import { exportToExcel } from '@/lib/export-excel';
+import { exportToExcel, inFrame } from '@/lib/export-excel';
 import { cn } from '@/lib/utils';
 import { pbiFormat } from '@/report/format';
 import type { ConstraintsChoice } from '@/report/constraints';
@@ -70,6 +70,8 @@ function App() {
   const [openLoan, setOpenLoan] = useState<number | null>(null);
   const [showChanges, setShowChanges] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // What the last Export to Excel did: the file it downloaded, or why it couldn't.
+  const [exported, setExported] = useState<{ file: string } | { error: string } | null>(null);
   // Files uploaded from the app and how each is loading (needs a Fabric sign-in).
   const uploads = useUploads(!!email);
   const uploading = uploads.uploads.filter(isActive).length;
@@ -181,12 +183,16 @@ function App() {
     const homeLoans = applyFilters([...snapshot.loans, ...[...byFile.values()].flatMap((s) => s.loans)], filters.home)
       .filter((l) => fileType === 'All' || fileTypeOf(l.file ?? loans.fileName ?? '') === fileType);
     setExporting(true);
+    setExported(null);
     try {
-      await exportToExcel({
+      const file = await exportToExcel({
         loans: homeLoans, snapshotOf: (l) => (l.file && byFile.get(l.file)) || snapshot,
         summary: multi ? undefined : snapshot.summary, fileColumn: multi ? loans.fileName ?? '' : undefined,
         title: multi ? `${shownFiles.length} files` : loans.fileName ?? 'Bid Model',
       });
+      setExported({ file });
+    } catch (e) {
+      setExported({ error: e instanceof Error ? e.message : String(e) });
     } finally {
       setExporting(false);
     }
@@ -240,9 +246,12 @@ function App() {
           ))}
         </ul>
         <div className="flex flex-col gap-200 border-t border-visual-border p-300">
-          <p aria-live="polite" className="flex items-center gap-200 text-200 text-muted-foreground">
-            {busy ? <><Loader2 className="icon-size-200 animate-spin" /> {status === 'loading' ? 'Loading the model…' : 'Recalculating…'}</>
-              : snapshot ? `Recalculated in ${snapshot.recalcMs} ms` : null}
+          {/* The bid model's formulas run here in the browser, from the loans the pipeline loaded:
+              when the app opens, when another file is picked and after every edit. */}
+          <p aria-live="polite" className="flex items-center gap-200 text-200 text-muted-foreground"
+            title="The model's formulas are calculated in your browser from the loaded loans each time the app opens, a file is chosen or a value is changed.">
+            {busy ? <><Loader2 className="icon-size-200 animate-spin" /> {status === 'loading' ? 'Calculating the model…' : 'Recalculating…'}</>
+              : snapshot ? `Model calculated in ${(snapshot.recalcMs / 1000).toFixed(1)} s` : null}
           </p>
           <SaveStatus status={shared.status} />
           <button type="button" onClick={() => setShowChanges(true)} disabled={!snapshot}
@@ -264,6 +273,14 @@ function App() {
             className="inline-flex items-center justify-center gap-200 rounded-md bg-primary px-300 py-200 text-300 font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
             {exporting ? <Loader2 className="icon-size-200 animate-spin" /> : <Download className="icon-size-200" />} Export to Excel
           </button>
+          {exported && ('error' in exported ? (
+            <p role="alert" className="text-200 text-destructive">The workbook couldn't be made: {exported.error}</p>
+          ) : (
+            <p role="status" className="break-words text-200 text-muted-foreground">
+              Downloaded “{exported.file}” (see your browser's downloads).
+              {inFrame() && <> Inside the Fabric portal downloads can be blocked; if no file came, <a href={window.location.href} target="_blank" rel="noopener noreferrer" className="font-semibold text-action underline">open the app in its own tab</a> and export there.</>}
+            </p>
+          ))}
           {info && <p className="text-100 text-muted-foreground">{info.sourceTape} → {info.sourceModel}</p>}
         </div>
       </nav>
