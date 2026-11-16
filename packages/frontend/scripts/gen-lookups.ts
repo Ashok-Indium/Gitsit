@@ -14,7 +14,7 @@
 import ExcelJS from 'exceljs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../../..');
@@ -100,15 +100,18 @@ export interface LookupSpec {
   blocks?: { name: string; row: number }[]; bands?: string[]; buckets?: string[];
 }
 
-async function main() {
+export type LookupRows = Record<string, Record<string, Value>[]>;
+
+/** Reads the lookup sheets of a workbook laid out as the model's (the model, or another tape's lookups). */
+export async function readLookupSheets(path: string, quiet = false): Promise<{ specs: LookupSpec[]; rows: LookupRows }> {
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.readFile(modelPath);
+  await wb.xlsx.readFile(path);
   const specs: LookupSpec[] = [];
-  const rows: Record<string, Record<string, Value>[]> = {};
+  const rows: LookupRows = {};
 
   for (const def of DEFS) {
     const ws = wb.getWorksheet(def.sheet);
-    if (!ws) throw new Error(`The model workbook has no sheet "${def.sheet}"`);
+    if (!ws) throw new Error(`${path} has no sheet "${def.sheet}"`);
     const at = (row: number, col: string) => cellValue(ws.getRow(row).getCell(colNum(col)).value);
 
     if (def.kind === 'list') {
@@ -152,8 +155,13 @@ async function main() {
         segments, blocks, bands, buckets });
       rows[def.table] = data;
     }
-    console.log(`${def.table}: ${rows[def.table].length} rows`);
+    if (!quiet) console.log(`${def.table}: ${rows[def.table].length} rows`);
   }
+  return { specs, rows };
+}
+
+async function main() {
+  const { specs, rows } = await readLookupSheets(modelPath);
 
   // ---- SQL ----
   const sqlType = (c: { name: string; type: ColType }, key: boolean) =>
@@ -195,4 +203,5 @@ export const LOOKUP_TABLES: readonly LookupSpec[] = ${JSON.stringify(specs, null
   writeFileSync(resolve(outDir, 'lookup-rows.json'), JSON.stringify(rows));
 }
 
-await main();
+// Run as a script (not when another script imports readLookupSheets).
+if (import.meta.url === pathToFileURL(process.argv[1]).href) await main();
