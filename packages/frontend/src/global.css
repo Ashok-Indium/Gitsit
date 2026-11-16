@@ -65,6 +65,15 @@
   --color-gridline: #e6e6e6;
   --color-override: #fff4ce; /* cells a user has overridden */
   --color-override-foreground: #8a5300;
+  /* Upload statuses (Upload Files page); Failed uses destructive */
+  --color-status-waiting: #f0f0f0;
+  --color-status-waiting-foreground: #5c5c5c;
+  --color-status-running: #fff4ce;
+  --color-status-running-foreground: #8a5300;
+  --color-status-done: #dff6dd;
+  --color-status-done-foreground: #0e700e;
+  --color-status-failed: #fde7e9;
+  --color-status-failed-foreground: #b10e1c;
   /* Home page tables, styled as the Model sheet (Excel has no dark mode, so neither do these) */
   --color-sheet: #ffffff;
   --color-sheet-foreground: #000000;
@@ -216,6 +225,14 @@
     --color-gridline: #3a3d44;
     --color-override: #463100;
     --color-override-foreground: #ffd96b;
+    --color-status-waiting: #333333;
+    --color-status-waiting-foreground: #c8c8c8;
+    --color-status-running: #463100;
+    --color-status-running-foreground: #ffd96b;
+    --color-status-done: #0d3b0d;
+    --color-status-done-foreground: #9fd89f;
+    --color-status-failed: #3f1011;
+    --color-status-failed-foreground: #ff99a4;
   }
 }
 

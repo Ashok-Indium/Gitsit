@@ -1,4 +1,4 @@
-import { BarChart3, ChevronDown, Cloud, CloudOff, Download, History, Loader2, Moon, RefreshCw, RotateCcw, Sun, X } from 'lucide-react';
+import { BarChart3, ChevronDown, Cloud, CloudOff, Download, History, Loader2, Moon, RefreshCw, RotateCcw, Sun, Upload as UploadIcon, X } from 'lucide-react';
 import { useContext, useMemo, useState } from 'react';
 
 import { LoanDetail } from '@/components/loan-detail';
@@ -15,12 +15,14 @@ import { useOtherFiles } from '@/store/use-other-files';
 import { fileTypeOf } from '@/store/file-type';
 import type { FileTypeChoice } from '@/report/pages';
 import { useSharedModel, type StoreStatus } from '@/store/use-shared-model';
+import { isActive, useUploads } from '@/store/use-uploads';
 import { exportToExcel } from '@/lib/export-excel';
 import { cn } from '@/lib/utils';
 import { pbiFormat } from '@/report/format';
 import type { ConstraintsChoice } from '@/report/constraints';
 import { applyFilters, PAGES, type Filters, type PageId } from '@/report/pages';
 import type { Editing } from '@/report/tables';
+import { StatusPill, UploadPage } from '@/report/upload-page';
 
 const navItem = 'flex w-full items-center gap-200 rounded-md px-300 py-200 text-left text-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
@@ -68,6 +70,9 @@ function App() {
   const [openLoan, setOpenLoan] = useState<number | null>(null);
   const [showChanges, setShowChanges] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // Files uploaded from the app and how each is loading (needs a Fabric sign-in).
+  const uploads = useUploads(!!email);
+  const uploading = uploads.uploads.filter(isActive).length;
 
   // The files the Home page shows (the model's own among them; just it when empty).
   const [shownChoice, setShownChoice] = useState<string[]>([]);
@@ -200,6 +205,13 @@ function App() {
         </div>
         <ul className="flex-1 overflow-y-auto p-200">
           <li>
+            <button type="button" aria-current={pageId === 'upload' ? 'page' : undefined} onClick={() => go('upload')}
+              className={cn(navItem, pageId === 'upload' ? 'bg-tab-active text-tab-active-foreground' : 'hover:bg-accent')}>
+              <UploadIcon className="icon-size-200" /> Upload Files
+              {uploading > 0 && <span className="ml-auto"><StatusPill status="Running">{uploading}</StatusPill></span>}
+            </button>
+          </li>
+          <li>
             <button type="button" aria-current={pageId === 'home' ? 'page' : undefined} onClick={() => go('home')}
               className={cn(navItem, pageId === 'home' ? 'bg-tab-active text-tab-active-foreground' : 'hover:bg-accent')}>Home Page</button>
           </li>
@@ -220,7 +232,7 @@ function App() {
               </ul>
             )}
           </li>
-          {main.filter((p) => p.id !== 'home').map((p) => (
+          {main.filter((p) => p.id !== 'home' && p.id !== 'upload').map((p) => (
             <li key={p.id}>
               <button type="button" aria-current={pageId === p.id ? 'page' : undefined} onClick={() => go(p.id)}
                 className={cn(navItem, pageId === p.id ? 'bg-tab-active text-tab-active-foreground' : 'hover:bg-accent')}>{p.title}</button>
@@ -305,7 +317,10 @@ function App() {
               Changes aren't being saved to Fabric: {shared.status.message}
             </div>
           )}
-          {snapshot ? (
+          {pageId === 'upload' ? (
+            <UploadPage uploads={uploads} email={email} loadedFiles={new Set(loans.files.map((f) => f.name))}
+              onOpen={(name) => { chooseFile(name); go('home'); }} />
+          ) : snapshot ? (
             page.render({
               snapshot, editing, navigate: go,
               filters: filters[fg],
@@ -315,6 +330,7 @@ function App() {
                 shown: shownFiles, onShownChange: showFiles, others: otherFiles, fileType, onFileTypeChange: chooseFileType,
               },
               constraints,
+              uploads: email ? { list: uploads.uploads, readAt: uploads.readAt } : undefined,
             })
           ) : status !== 'error' && (
             <div className="flex flex-col gap-300 p-300" aria-label="Loading the model">

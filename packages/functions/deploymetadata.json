@@ -190,6 +190,108 @@
         ]
       },
       "functionCode": "udf.func(\n  'deleteFiles',\n  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>, fileNames: string[]): Promise<DeletedRows[]> => {\n    if (!Array.isArray(fileNames) || !fileNames.length || fileNames.length > 50) throw new Error('Invalid input.');\n    const files = JSON.stringify([...new Set(fileNames.map((f) => text(f, 200)))]);\n    const pool = await connect(ctx);\n    const tx = new sql.Transaction(pool);\n    try {\n      await tx.begin();\n      const out: DeletedRows[] = [];\n      for (const [schema, table] of FILE_TABLES) {\n        // The loader creates Input_files on its first run, so it may not exist yet.\n        const result = await new sql.Request(tx).input('files', sql.NVarChar(sql.MAX), files)\n          .query(`IF OBJECT_ID(N'[${schema}].[${table}]', N'U') IS NOT NULL\n  DELETE FROM [${schema}].[${table}] WHERE [File_Name] IN (SELECT [value] FROM OPENJSON(@files));`);\n        out.push({ table: `${schema}.${table}`, rows: result.rowsAffected.reduce((a, b) => a + b, 0) });\n      }\n      await tx.commit();\n      return out;\n    } catch (e) {\n      await tx.rollback().catch(() => undefined);\n      throw e;\n    } finally {\n      await pool.close();\n    }\n  },\n  [],\n)"
+    },
+    {
+      "name": "uploadFile",
+      "scriptFile": "src\\function_app.ts",
+      "bindings": [
+        {
+          "name": "req",
+          "type": "httpTrigger",
+          "direction": "in",
+          "authLevel": "anonymous",
+          "methods": [
+            "post"
+          ],
+          "route": "uploadFile"
+        },
+        {
+          "name": "$return",
+          "type": "http",
+          "direction": "out"
+        },
+        {
+          "name": "__generic_Sql",
+          "direction": "in",
+          "type": "FabricItem",
+          "alias": "",
+          "audienceType": "Sql"
+        },
+        {
+          "name": "__generic_Storage",
+          "direction": "in",
+          "type": "FabricItem",
+          "alias": "",
+          "audienceType": "Storage"
+        }
+      ],
+      "fabricProperties": {
+        "fabricMetadataSchemaVersion": "1.0",
+        "fabricFunctionReturnType": "Promise<UploadResult>",
+        "fabricFunctionParameters": [
+          {
+            "name": "ctx",
+            "dataType": "RayfinContext<Record<string, never>, AudienceType.Sql | AudienceType.Storage>",
+            "hasDefaultValue": false
+          },
+          {
+            "name": "fileName",
+            "dataType": "string",
+            "hasDefaultValue": false
+          },
+          {
+            "name": "content",
+            "dataType": "string",
+            "hasDefaultValue": false
+          },
+          {
+            "name": "userMail",
+            "dataType": "string",
+            "hasDefaultValue": false
+          }
+        ]
+      },
+      "functionCode": "udf.func(\n  'uploadFile',\n  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql | AudienceType.Storage>, fileName: string, content: string, userMail: string): Promise<UploadResult> => {\n    const name = text(fileName, 200).trim();\n    // An NPL_ or BPL_ workbook, named without a folder.\n    if (!/^(NPL|BPL)_[^/\\\\:*?\"<>|]+\\.xlsx$/i.test(name)) throw new Error('The file must be an .xlsx workbook whose name starts with NPL_ or BPL_.');\n    if (typeof content !== 'string' || !content.length) throw new Error('The file is empty.');\n    const bytes = Buffer.from(content, 'base64');\n    if (bytes.length > MAX_UPLOAD_BYTES) throw new Error(`The file is larger than ${MAX_UPLOAD_BYTES / 1024 / 1024} MB.`);\n    // An .xlsx workbook is a zip archive.\n    if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) throw new Error(\"The file isn't an Excel workbook (.xlsx).\");\n    const user = callerEmail(ctx) ?? (typeof userMail === 'string' && userMail.trim() ? userMail.trim().slice(0, 200) : null);\n    const pool = await connect(ctx);\n    try {\n      await pool.request().query(STATUS_TABLE);\n      // Recorded first, so the loader finds the row when the file's arrival starts it.\n      const row = await pool.request()\n        .input('file', sql.NVarChar(260), name).input('user', sql.NVarChar(200), user)\n        .query<{ id: number }>(`INSERT INTO dbo.Upload_status (Source_File, Status, Uploaded_By, Uploaded_On, Updated_On)\nOUTPUT INSERTED.Upload_Id AS id VALUES (@file, N'Waiting', @user, SYSUTCDATETIME(), SYSUTCDATETIME());`);\n      const id = row.recordset[0].id;\n      try {\n        await putFile(ctx.Tokens.Storage, `${INPUT_FOLDER}/${encodeURIComponent(name)}`, bytes);\n      } catch (e) {\n        const message = `Couldn't save the file to the Lakehouse: ${e instanceof Error ? e.message : String(e)}`;\n        await pool.request().input('id', sql.Int, id).input('message', sql.NVarChar(4000), message.slice(0, 4000))\n          .query(`UPDATE dbo.Upload_status SET Status = N'Failed', Message = @message, Updated_On = SYSUTCDATETIME() WHERE Upload_Id = @id;`);\n        throw new Error(message);\n      }\n      return { uploadId: id, fileName: name };\n    } finally {\n      await pool.close();\n    }\n  },\n  [],\n)"
+    },
+    {
+      "name": "uploadStatus",
+      "scriptFile": "src\\function_app.ts",
+      "bindings": [
+        {
+          "name": "req",
+          "type": "httpTrigger",
+          "direction": "in",
+          "authLevel": "anonymous",
+          "methods": [
+            "post"
+          ],
+          "route": "uploadStatus"
+        },
+        {
+          "name": "$return",
+          "type": "http",
+          "direction": "out"
+        },
+        {
+          "name": "__generic_Sql",
+          "direction": "in",
+          "type": "FabricItem",
+          "alias": "",
+          "audienceType": "Sql"
+        }
+      ],
+      "fabricProperties": {
+        "fabricMetadataSchemaVersion": "1.0",
+        "fabricFunctionReturnType": "Promise<UploadStatus[]>",
+        "fabricFunctionParameters": [
+          {
+            "name": "ctx",
+            "dataType": "RayfinContext<Record<string, never>, AudienceType.Sql>",
+            "hasDefaultValue": false
+          }
+        ]
+      },
+      "functionCode": "udf.func(\n  'uploadStatus',\n  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>): Promise<UploadStatus[]> => {\n    const pool = await connect(ctx);\n    try {\n      const result = await pool.request().query<Omit<UploadStatus, 'Uploaded_On' | 'Updated_On'> & { Uploaded_On: Date; Updated_On: Date }>(\n        `IF OBJECT_ID(N'dbo.Upload_status', N'U') IS NOT NULL\nSELECT TOP (200) Upload_Id, Source_File, File_Name, Status, Loans, Message, Uploaded_By, Uploaded_On, Updated_On\nFROM dbo.Upload_status ORDER BY Upload_Id DESC;`);\n      // The times are stored in UTC (SYSUTCDATETIME), and the driver reads them as UTC.\n      return (result.recordset ?? []).map((r) => ({ ...r, Uploaded_On: r.Uploaded_On.toISOString(), Updated_On: r.Updated_On.toISOString() }));\n    } finally {\n      await pool.close();\n    }\n  },\n  [],\n)"
     }
   ]
 }

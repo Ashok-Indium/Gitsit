@@ -18,9 +18,11 @@ import { pbiAuto, pbiFormat } from './format';
 import { binLoans, cumulative, HISTOGRAMS, type HistogramDef } from './histograms';
 import { groupBy, MEASURES, num, text, type Loan, type MeasureKey } from './measures';
 import { CashFlowPivot, LoanTable, MeasureMatrix, type Editing } from './tables';
+import { UploadFilesButton } from './upload-page';
 import { CardGroup, FileMultiSlicer, FileSlicer, PageBanner, Slicer, VisualFrame, type InputFileOption } from './visuals';
 import { FILE_TYPES, fileTypeOf, type FileType } from '@/store/file-type';
 import type { FileView } from '@/store/use-other-files';
+import type { Upload } from '@/store/use-uploads';
 
 // ---------- slicers ----------
 
@@ -64,6 +66,8 @@ export interface PageProps {
   file: FileChoice;
   /** The selected file's model constants (the Constraints page). */
   constraints?: ConstraintsChoice;
+  /** The latest uploads, for the Home page's Upload files button (absent when not signed in). */
+  uploads?: { list: Upload[]; readAt: number };
 }
 
 function AnalysisSlicers({ snapshot, filters, setFilters }: Pick<PageProps, 'snapshot' | 'filters' | 'setFilters'>) {
@@ -122,7 +126,7 @@ const sumBy = (loans: Loan[], col: string, measure: 'bid' | 'loans') =>
 
 const actionBtn = 'inline-flex items-center justify-center gap-100 rounded-2xl bg-action px-400 py-200 text-300 text-action-foreground hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
-export function HomePage({ snapshot, editing, filters, setFilters, navigate, file }: PageProps) {
+export function HomePage({ snapshot, editing, filters, setFilters, navigate, file, uploads }: PageProps) {
   const [section, setSection] = useState<SectionId>('output');
   const s = SECTIONS.find((x) => x.id === section)!;
   // The model's loans, then those of the other ticked files (each marked with its file).
@@ -147,6 +151,7 @@ export function HomePage({ snapshot, editing, filters, setFilters, navigate, fil
             className="mb-100 rounded-md p-100 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <img src={clearFilterIcon} alt="" className="icon-size-600" />
           </button>
+          {uploads && <UploadFilesButton uploads={uploads.list} now={uploads.readAt} onClick={() => navigate('upload')} />}
           {file.onDelete && <DeleteFilesButton files={file.files} current={file.fileName} disabled={file.busy} onDelete={file.onDelete} />}
           <button type="button" className={cn(actionBtn, 'ml-auto')} onClick={() => navigate('loanDetail')}>Master Table</button>
         </>
@@ -396,7 +401,7 @@ export function AssumptionsPage({ snapshot, editing }: PageProps) {
 // ---------- page registry ----------
 
 export type PageId =
-  | 'home' | 'bidSummary' | 'stratification' | 'exits' | 'mix' | 'loanDetail' | 'assumptions' | 'edit_fields' | 'constraints'
+  | 'upload' | 'home' | 'bidSummary' | 'stratification' | 'exits' | 'mix' | 'loanDetail' | 'assumptions' | 'edit_fields' | 'constraints'
   | 'h-sellerValue' | 'h-sellerUpb' | 'h-totalUpb' | 'h-assetValue' | 'h-assetMm' | 'h-ltv' | 'h-dtv'
   | 'h-monthsDq' | 'h-seasoned' | 'h-rate' | 'h-pi' | 'h-origYear' | 'h-payersYtm';
 
@@ -413,6 +418,8 @@ const hist = (id: PageId, def: HistogramDef, title = def.title, combined?: 'upb'
 
 /** Pages in the report's order. */
 export const PAGES: PageDef[] = [
+  // App renders this one itself: it works before (and without) a model.
+  { id: 'upload', title: 'Upload Files', group: 'main', filterGroup: 'none', render: () => null },
   { id: 'home', title: 'Home Page', group: 'main', filterGroup: 'home', render: (p) => <HomePage {...p} /> },
   hist('h-sellerValue', HISTOGRAMS.sellerValue),
   hist('h-sellerUpb', HISTOGRAMS.sellerValue, 'Seller Value & Total UPB Distribution', 'upb'),

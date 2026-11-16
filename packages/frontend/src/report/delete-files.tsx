@@ -15,7 +15,7 @@ const REMOVED = [
   'its loans (Input_table)',
   'its calculated model (Loan_Model and Loan_Model_Monthly)',
   'its loan changes (LoanChanges)',
-  'its load record (Input_files)',
+  'its load record (Input_files) and upload status (Upload_status)',
   'its constraint values and their history (Constraints schema)',
 ];
 

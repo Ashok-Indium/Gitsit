@@ -3,7 +3,9 @@
 // reaches dbo tables, so the Constraints page reads and saves them through these functions, which
 // run SQL as the app identity (the owner of the Fabric app item). deleteFiles removes input files
 // from every table at once, which the data service can't do in one transaction. loadLookups reads
-// the lookup tables of a file type from its schema (BPL_Lookups or NPL_Lookups).
+// the lookup tables of a file type from its schema (BPL_Lookups or NPL_Lookups). uploadFile saves an
+// input file into the Lakehouse folder the loader pipeline watches, and uploadStatus reads how each
+// upload went (dbo.Upload_status, which the loader notebook keeps up to date).
 
 import { AudienceType, UserDataFunctions, type RayfinContext } from '@microsoft/fabric-user-data-functions';
 import sql from 'mssql';
@@ -13,8 +15,6 @@ const udf = new UserDataFunctions();
 /** gitsit-test (Fabric SQL database in workspace Gitsit_test). */
 const SQL_SERVER = 'wssfdnev5nyelmdvw3xumqun3i-pqhpudri7sjejflsu6qgtrtzvm.database.fabric.microsoft.com';
 const DATABASE = 'gitsit-test-e40f6906-4431-48db-8eca-33c1fd246d16';
-
-type SqlContext = RayfinContext<Record<string, never>, AudienceType.Sql>;
 
 export interface ConstraintValue {
   File_Name: string;
@@ -49,10 +49,45 @@ export interface DeletedRows {
 /** Every table that holds rows per input file (File_Name), in the order deleteFiles empties them. */
 const FILE_TABLES = [
   ['dbo', 'InputLoans'], ['dbo', 'LoanModels'], ['dbo', 'LoanModelMonthlies'], ['dbo', 'LoanChanges'], ['dbo', 'Input_files'],
-  ['Constraints', 'BPL_ConstraintValues'], ['Constraints', 'BPL_ConstraintChanges'],
+  ['dbo', 'Upload_status'], ['Constraints', 'BPL_ConstraintValues'], ['Constraints', 'BPL_ConstraintChanges'],
 ] as const;
 
-async function connect(ctx: SqlContext): Promise<sql.ConnectionPool> {
+/** The gitsit_files Lakehouse folder the loader pipeline watches (OneLake DFS). */
+const INPUT_FOLDER = 'https://onelake.dfs.fabric.microsoft.com/0efa0e7c-fc28-4492-9572-a7a069c679ab/828ac29b-3435-4e31-bc84-24b661263994/Files/input';
+/** The largest file uploadFile takes (input tapes are tens of KB). */
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+
+/**
+ * One row per uploaded file: Waiting (saved to Files/input), Running (the loader is reading it),
+ * Completed (loaded as File_Name) or Failed (Message says why). The loader notebook creates the
+ * same table and adds a row for files put into Files/input some other way.
+ */
+const STATUS_TABLE = `IF OBJECT_ID(N'dbo.Upload_status', N'U') IS NULL
+CREATE TABLE dbo.Upload_status (Upload_Id INT IDENTITY(1,1) NOT NULL PRIMARY KEY, Source_File NVARCHAR(260) NOT NULL,
+  File_Name NVARCHAR(200) NULL, Status NVARCHAR(20) NOT NULL, Loans INT NULL, Message NVARCHAR(4000) NULL,
+  Uploaded_By NVARCHAR(200) NULL, Uploaded_On DATETIME2 NOT NULL, Updated_On DATETIME2 NOT NULL);`;
+
+export interface UploadStatus {
+  Upload_Id: number;
+  /** The file's name as uploaded (with .xlsx). */
+  Source_File: string;
+  /** The name it was loaded as, with the load date (once Completed). */
+  File_Name: string | null;
+  Status: string;
+  Loans: number | null;
+  Message: string | null;
+  Uploaded_By: string | null;
+  /** ISO times (UTC). */
+  Uploaded_On: string;
+  Updated_On: string;
+}
+
+export interface UploadResult {
+  uploadId: number;
+  fileName: string;
+}
+
+async function connect(ctx: { Tokens: { Sql: string } }): Promise<sql.ConnectionPool> {
   return new sql.ConnectionPool({
     server: SQL_SERVER,
     database: DATABASE,
@@ -62,7 +97,7 @@ async function connect(ctx: SqlContext): Promise<sql.ConnectionPool> {
 }
 
 /** Who invoked the function: the email in the caller's Rayfin token (xms_attr.<app>.rfn_email), if it carries one. */
-function callerEmail(ctx: SqlContext): string | undefined {
+function callerEmail(ctx: { accessToken: string }): string | undefined {
   try {
     const claims = JSON.parse(Buffer.from(ctx.accessToken.split('.')[1], 'base64url').toString('utf8')) as Record<string, unknown>;
     const attrs = Object.values((claims.xms_attr ?? {}) as Record<string, Record<string, unknown>>);
@@ -182,6 +217,75 @@ udf.func(
     } catch (e) {
       await tx.rollback().catch(() => undefined);
       throw e;
+    } finally {
+      await pool.close();
+    }
+  },
+  [],
+);
+
+/** Writes a file to OneLake (create, append, flush), replacing one of the same name. */
+async function putFile(token: string, url: string, bytes: Buffer): Promise<void> {
+  const call = async (method: string, query: string, body?: Buffer) => {
+    const res = await fetch(`${url}?${query}`, { method, body, headers: { Authorization: `Bearer ${token}`, 'x-ms-version': '2023-11-03' } });
+    if (!res.ok) throw new Error(`OneLake ${query.split('&')[0]} returned ${res.status} ${(await res.text()).slice(0, 300)}`);
+  };
+  await call('PUT', 'resource=file');
+  await call('PATCH', 'action=append&position=0', bytes);
+  await call('PATCH', `action=flush&position=${bytes.length}`);
+}
+
+// Saves an input workbook into the Lakehouse's Files/input folder, where its arrival starts the
+// loader pipeline, and records it in Upload_status as Waiting. `content` is the file, base64.
+udf.func(
+  'uploadFile',
+  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql | AudienceType.Storage>, fileName: string, content: string, userMail: string): Promise<UploadResult> => {
+    const name = text(fileName, 200).trim();
+    // An NPL_ or BPL_ workbook, named without a folder.
+    if (!/^(NPL|BPL)_[^/\\:*?"<>|]+\.xlsx$/i.test(name)) throw new Error('The file must be an .xlsx workbook whose name starts with NPL_ or BPL_.');
+    if (typeof content !== 'string' || !content.length) throw new Error('The file is empty.');
+    const bytes = Buffer.from(content, 'base64');
+    if (bytes.length > MAX_UPLOAD_BYTES) throw new Error(`The file is larger than ${MAX_UPLOAD_BYTES / 1024 / 1024} MB.`);
+    // An .xlsx workbook is a zip archive.
+    if (bytes.length < 4 || bytes[0] !== 0x50 || bytes[1] !== 0x4b) throw new Error("The file isn't an Excel workbook (.xlsx).");
+    const user = callerEmail(ctx) ?? (typeof userMail === 'string' && userMail.trim() ? userMail.trim().slice(0, 200) : null);
+    const pool = await connect(ctx);
+    try {
+      await pool.request().query(STATUS_TABLE);
+      // Recorded first, so the loader finds the row when the file's arrival starts it.
+      const row = await pool.request()
+        .input('file', sql.NVarChar(260), name).input('user', sql.NVarChar(200), user)
+        .query<{ id: number }>(`INSERT INTO dbo.Upload_status (Source_File, Status, Uploaded_By, Uploaded_On, Updated_On)
+OUTPUT INSERTED.Upload_Id AS id VALUES (@file, N'Waiting', @user, SYSUTCDATETIME(), SYSUTCDATETIME());`);
+      const id = row.recordset[0].id;
+      try {
+        await putFile(ctx.Tokens.Storage, `${INPUT_FOLDER}/${encodeURIComponent(name)}`, bytes);
+      } catch (e) {
+        const message = `Couldn't save the file to the Lakehouse: ${e instanceof Error ? e.message : String(e)}`;
+        await pool.request().input('id', sql.Int, id).input('message', sql.NVarChar(4000), message.slice(0, 4000))
+          .query(`UPDATE dbo.Upload_status SET Status = N'Failed', Message = @message, Updated_On = SYSUTCDATETIME() WHERE Upload_Id = @id;`);
+        throw new Error(message);
+      }
+      return { uploadId: id, fileName: name };
+    } finally {
+      await pool.close();
+    }
+  },
+  [],
+);
+
+// The latest uploads (newest first) and how each went.
+udf.func(
+  'uploadStatus',
+  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>): Promise<UploadStatus[]> => {
+    const pool = await connect(ctx);
+    try {
+      const result = await pool.request().query<Omit<UploadStatus, 'Uploaded_On' | 'Updated_On'> & { Uploaded_On: Date; Updated_On: Date }>(
+        `IF OBJECT_ID(N'dbo.Upload_status', N'U') IS NOT NULL
+SELECT TOP (200) Upload_Id, Source_File, File_Name, Status, Loans, Message, Uploaded_By, Uploaded_On, Updated_On
+FROM dbo.Upload_status ORDER BY Upload_Id DESC;`);
+      // The times are stored in UTC (SYSUTCDATETIME), and the driver reads them as UTC.
+      return (result.recordset ?? []).map((r) => ({ ...r, Uploaded_On: r.Uploaded_On.toISOString(), Updated_On: r.Updated_On.toISOString() }));
     } finally {
       await pool.close();
     }

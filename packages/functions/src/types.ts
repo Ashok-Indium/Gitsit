@@ -33,4 +33,12 @@ export type AppFunctionsSchema = {
     input: { fileNames: string[] };
     output: { table: string; rows: number }[];
   };
+  uploadFile: {
+    input: { fileName: string; content: string; userMail: string };
+    output: { uploadId: number; fileName: string };
+  };
+  uploadStatus: {
+    input: Record<string, never>;
+    output: { Upload_Id: number; Source_File: string; File_Name: null | string; Status: string; Loans: null | number; Message: null | string; Uploaded_By: null | string; Uploaded_On: string; Updated_On: string }[];
+  };
 };
