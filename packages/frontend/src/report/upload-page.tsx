@@ -183,7 +183,7 @@ export function UploadPage({ uploads, email, loadedFiles, onOpen }: {
               <p className="text-400 font-semibold text-title">Drag Excel files here, or choose them</p>
               <p className="text-200 text-muted-foreground">
                 .xlsx workbooks up to {MAX_UPLOAD_MB} MB, named NPL_… or BPL_… (the start of the name picks the NPL or BPL lookup tables).
-                Each file is loaded under its name with today's date, e.g. BPL_Pacific Private Money_11_16_2026.
+                Each upload is kept under its name with the date and time it was loaded (US Eastern), e.g. BPL_Pacific Private Money_11_16_2026 14h-30m.
               </p>
             </div>
             <input ref={input} type="file" accept=".xlsx" multiple className="sr-only" tabIndex={-1} aria-hidden

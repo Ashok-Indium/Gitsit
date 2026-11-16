@@ -23,9 +23,10 @@ const columns = INPUT_COLUMNS.map((c) => [c.header, c.name, c.type]);
 
 const code = `# Loads every new or changed Excel file in this Lakehouse's Files/input folder into Input_table
 # (database gitsit-test). Each file's rows get File_Name = the file's name without ".xlsx" and
-# with the load date (India time) added, e.g. "BPL_Pacific Private Money.xlsx" loaded on
-# 16 Nov 2026 -> "BPL_Pacific Private Money_11_16_2026"; a name that already ends with such a date
-# keeps it. The same file loaded again on the same day replaces that day's rows.
+# with the load date and time (US Eastern, 24-hour) added, e.g. "BPL_Pacific Private Money.xlsx"
+# loaded on 16 Nov 2026 at 14:30 -> "BPL_Pacific Private Money_11_16_2026 14h-30m", so each upload
+# of a file is kept as a file of its own; a name that already ends with such a date (and time)
+# keeps it. A file loaded again within the same minute replaces that load's rows.
 # A loaded file is moved to Files/Archive as "<load time> - <its File_Name>.xlsx"; a file that
 # couldn't be loaded to Files/Failed as "<load time> - <file name>", with the reason in
 # Files/Load errors. Activator rules on those two folders email the result. Each file's progress
@@ -128,8 +129,8 @@ insert = f"INSERT INTO dbo.Input_table ({', '.join('[' + n + ']' for n in names)
 cur.fast_executemany = True
 results = []
 summary = {"loaded": [], "failed": []}
-# The load date added to each file's name: MM_DD_YYYY, India time.
-today = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%m_%d_%Y")
+# The load date and time added to each file's name: MM_DD_YYYY HHh-MMm, US Eastern time (24-hour).
+loaded_at = datetime.datetime.now(ZoneInfo("America/New_York")).strftime("%m_%d_%Y %Hh-%Mm")
 os.makedirs(FOLDER, exist_ok=True)
 for folder in (ARCHIVE, FAILED, REASONS):
     notebookutils.fs.mkdirs(folder)
@@ -139,7 +140,7 @@ for f in sorted(os.listdir(FOLDER)):
         continue
     stem, ext = os.path.splitext(f)
     stem = stem.strip()
-    file_name = (stem if re.search(r"_\\d{2}_\\d{2}_\\d{4}$", stem) else f"{stem[:189]}_{today}")[:200]
+    file_name = (stem if re.search(r"_\\d{2}_\\d{2}_\\d{4}( \\d{2}h-\\d{2}m)?$", stem) else f"{stem[:181]}_{loaded_at}")[:200]
     modified = datetime.datetime.utcfromtimestamp(os.path.getmtime(path)).replace(microsecond=0)
     stamp = datetime.datetime.utcnow().strftime("%Y-%m-%d %H%M%S")
     if loaded.get(file_name) == modified:
