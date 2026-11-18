@@ -21,8 +21,8 @@ export interface SharedModel {
   reset: (cells: CellRef[]) => Promise<void>;
   resetAll: () => Promise<void>;
   /**
-   * Applies model constants to the model and saves them to Constraints.BPL_ConstraintValues
-   * (logged in BPL_ConstraintChanges). Resolves with whether the model took them and whether
+   * Applies model constants to the model and saves them to Constraints.ConstraintValues
+   * (logged in ConstraintChanges). Resolves with whether the model took them and whether
    * they were saved (nothing is written without a signed-in user or without entries).
    */
   applyConstants: (constants: Constants, entries: ConstraintEdit[]) => Promise<{ applied: boolean; saved: boolean; error?: string }>;

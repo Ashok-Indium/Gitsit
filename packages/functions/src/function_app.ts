@@ -1,5 +1,6 @@
-// The model constants of each input file, in the SQL tables Constraints.BPL_ConstraintValues and
-// Constraints.BPL_ConstraintChanges of the app's database gitsit-test. The app's data service only
+// The model constants of each input file, in the SQL tables Constraints.ConstraintValues and
+// Constraints.ConstraintChanges of the app's database gitsit-test, and the defaults every new file
+// starts with (Constraints.ConstraintDefaults; docs/constraints.sql). The app's data service only
 // reaches dbo tables, so the Constraints page reads and saves them through these functions, which
 // run SQL as the app identity (the owner of the Fabric app item). deleteFiles removes input files
 // from every table at once, which the data service can't do in one transaction. loadLookups reads
@@ -18,6 +19,11 @@ const DATABASE = 'gitsit-test-e40f6906-4431-48db-8eca-33c1fd246d16';
 
 export interface ConstraintValue {
   File_Name: string;
+  Field_Index: string;
+  Value: string | null;
+}
+
+export interface ConstraintDefault {
   Field_Index: string;
   Value: string | null;
 }
@@ -49,7 +55,7 @@ export interface DeletedRows {
 /** Every table that holds rows per input file (File_Name), in the order deleteFiles empties them. */
 const FILE_TABLES = [
   ['dbo', 'InputLoans'], ['dbo', 'LoanModels'], ['dbo', 'LoanModelMonthlies'], ['dbo', 'LoanChanges'], ['dbo', 'Input_files'],
-  ['dbo', 'Upload_status'], ['Constraints', 'BPL_ConstraintValues'], ['Constraints', 'BPL_ConstraintChanges'],
+  ['dbo', 'Upload_status'], ['Constraints', 'ConstraintValues'], ['Constraints', 'ConstraintChanges'],
 ] as const;
 
 /** The gitsit_files Lakehouse folder the loader pipeline watches (OneLake DFS). */
@@ -119,8 +125,25 @@ udf.func(
     const pool = await connect(ctx);
     try {
       const result = await pool.request()
-        .query<ConstraintValue>('SELECT [File_Name], [Field_Index], [Value] FROM [Constraints].[BPL_ConstraintValues]');
+        .query<ConstraintValue>('SELECT [File_Name], [Field_Index], [Value] FROM [Constraints].[ConstraintValues]');
       return result.recordset.map((r) => ({ File_Name: r.File_Name, Field_Index: r.Field_Index, Value: r.Value }));
+    } finally {
+      await pool.close();
+    }
+  },
+  [],
+);
+
+// The defaults every new input file starts with (Constraints.ConstraintDefaults), which the
+// Constraints page shows beside each file's values and can put back.
+udf.func(
+  'loadConstraintDefaults',
+  async (ctx: RayfinContext<Record<string, never>, AudienceType.Sql>): Promise<ConstraintDefault[]> => {
+    const pool = await connect(ctx);
+    try {
+      const result = await pool.request()
+        .query<ConstraintDefault>('SELECT [Field_Index], [Value] FROM [Constraints].[ConstraintDefaults]');
+      return result.recordset.map((r) => ({ Field_Index: r.Field_Index, Value: r.Value }));
     } finally {
       await pool.close();
     }
@@ -148,11 +171,11 @@ udf.func(
           .input('file', sql.NVarChar(200), file).input('index', sql.NVarChar(100), r.index)
           .input('display', sql.NVarChar(200), r.display).input('value', sql.NVarChar(100), r.value)
           .input('user', sql.NVarChar(200), user)
-          .query(`DECLARE @old NVARCHAR(100) = (SELECT [Value] FROM [Constraints].[BPL_ConstraintValues] WHERE [File_Name] = @file AND [Field_Index] = @index);
-UPDATE [Constraints].[BPL_ConstraintValues] SET [Value] = @value WHERE [File_Name] = @file AND [Field_Index] = @index;
+          .query(`DECLARE @old NVARCHAR(100) = (SELECT [Value] FROM [Constraints].[ConstraintValues] WHERE [File_Name] = @file AND [Field_Index] = @index);
+UPDATE [Constraints].[ConstraintValues] SET [Value] = @value WHERE [File_Name] = @file AND [Field_Index] = @index;
 IF @@ROWCOUNT = 0
-  INSERT INTO [Constraints].[BPL_ConstraintValues] ([File_Name], [Field_Index], [Field_Name_Display], [Value]) VALUES (@file, @index, @display, @value);
-INSERT INTO [Constraints].[BPL_ConstraintChanges] ([File_Name], [Field_Index], [Field_Name_Display], [Old_Value], [New_Value], [User_mail], [Changed_On])
+  INSERT INTO [Constraints].[ConstraintValues] ([File_Name], [Field_Index], [Field_Name_Display], [Value]) VALUES (@file, @index, @display, @value);
+INSERT INTO [Constraints].[ConstraintChanges] ([File_Name], [Field_Index], [Field_Name_Display], [Old_Value], [New_Value], [User_mail], [Changed_On])
 VALUES (@file, @index, @display, @old, @value, @user, SYSUTCDATETIME());`);
       }
       await tx.commit();

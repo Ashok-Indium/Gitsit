@@ -18,6 +18,22 @@
       ]
     },
     {
+      "functionName": "loadConstraintDefaults",
+      "delegateParameters": [
+        {
+          "name": "ctx",
+          "type": "RayfinContext<Record<string, never>, AudienceType.Sql>",
+          "optional": false,
+          "hasDefault": false,
+          "position": 0,
+          "isFabricParameter": false
+        }
+      ],
+      "contextAudiences": [
+        "Sql"
+      ]
+    },
+    {
       "functionName": "applyConstraints",
       "delegateParameters": [
         {

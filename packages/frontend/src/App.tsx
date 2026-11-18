@@ -138,8 +138,9 @@ function App() {
   const constraints: ConstraintsChoice = {
     values: loans.constants,
     error: loans.constraintsError,
-    // The model recalculates with the new values at once; they are saved to Constraints.BPL_ConstraintValues
-    // and logged in Constraints.BPL_ConstraintChanges.
+    defaults: loans.constraintDefaults,
+    // The model recalculates with the new values at once; they are saved to Constraints.ConstraintValues
+    // and logged in Constraints.ConstraintChanges.
     onApply: async (values) => {
       const file = loans.fileName;
       if (!file) throw new Error('No input file is selected.');

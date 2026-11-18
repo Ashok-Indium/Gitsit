@@ -1,8 +1,9 @@
-// Constraints: the model constants of one input file (Constraints.BPL_ConstraintValues). Pick the file,
+// Constraints: the model constants of one input file (Constraints.ConstraintValues). Pick the file,
 // change any values, then Apply: the model recalculates with them and they are saved for that file.
+// Each file started with the defaults (Constraints.ConstraintDefaults), shown beside its values.
 
 import { RotateCcw, Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import { CONSTRAINT_FIELDS, CONSTRAINT_GROUPS, constraintText, type ConstraintField } from '@/engine/constraint-fields';
 import defaults from '@/engine/generated/constraint-defaults.json';
@@ -17,6 +18,8 @@ export interface ConstraintsChoice {
   values: FileConstants;
   /** Why the stored values couldn't be read; applying is held back so they aren't overwritten blind. */
   error: string | null;
+  /** The defaults new files start with (Constraints.ConstraintDefaults), by Field_Index; null when unread. */
+  defaults: FileConstants | null;
   /** Applies the given stored values (by Field_Index) to the selected file; resolves with what happened and whether they were saved. */
   onApply: (values: Map<string, string>) => Promise<{ message: string; saved: boolean }>;
 }
@@ -59,17 +62,20 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
   const [result, setResult] = useState<{ file: string; text: string } | null>(null);
   const [applying, setApplying] = useState(false);
   const fileName = file.fileName ?? '';
+  // A field's default: Constraints.ConstraintDefaults, or the Model sheet's value when it can't be read.
+  const table = constraints?.defaults;
+  const def = useCallback((f: ConstraintField) => (table?.has(f.index) ? table.get(f.index) ?? '' : DEFAULTS[f.index]), [table]);
   const draft = useMemo(() => drafts[fileName] ?? {}, [drafts, fileName]);
-  const stored = (f: ConstraintField) => constraints?.values.get(f.index) ?? DEFAULTS[f.index] ?? '';
+  const stored = (f: ConstraintField) => constraints?.values.get(f.index) ?? def(f) ?? '';
 
   // Each typed value: valid (its stored form) or not, and whether it differs from what is stored.
   const edits = useMemo(() => CONSTRAINT_FIELDS.flatMap((f) => {
     const text = draft[f.index];
     if (text === undefined) return [];
     const next = storedText(f, text);
-    const current = constraints?.values.get(f.index) ?? DEFAULTS[f.index] ?? '';
+    const current = constraints?.values.get(f.index) ?? def(f) ?? '';
     return next === current ? [] : [{ f, next }];
-  }), [draft, constraints]);
+  }), [draft, constraints, def]);
   const invalid = edits.filter((e) => e.next === null);
   const pending = edits.filter((e): e is { f: ConstraintField; next: string } => e.next !== null);
 
@@ -86,7 +92,7 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
     fields: CONSTRAINT_FIELDS.filter((f) => f.group === g && (!q || [f.display, f.index, f.cell].some((s) => s.toLowerCase().includes(q))))
       .sort((a, b) => a.order - b.order),
   })).filter((g) => g.fields.length);
-  const fromDefault = CONSTRAINT_FIELDS.filter((f) => stored(f) !== DEFAULTS[f.index]).length;
+  const fromDefault = CONSTRAINT_FIELDS.filter((f) => stored(f) !== def(f)).length;
 
   const apply = async () => {
     if (!constraints || !pending.length || invalid.length) return;
@@ -129,16 +135,16 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
             </div>
           </div>
           <p aria-live="polite" className="mt-200 text-200 text-muted-foreground">
-            {constraints?.error ? <span role="alert" className="text-destructive">Couldn't read the saved values from Constraints.BPL_ConstraintValues ({constraints.error}). The Model sheet's values are shown and Apply is off.</span>
+            {constraints?.error ? <span role="alert" className="text-destructive">Couldn't read the saved values from Constraints.ConstraintValues ({constraints.error}). The defaults are shown and Apply is off.</span>
               : invalid.length ? <span className="text-destructive">Fix {invalid.map((e) => e.f.display).join(', ')} before applying.</span>
               : result?.file === fileName ? result.text
-                : `${fromDefault} of ${CONSTRAINT_FIELDS.length} fields differ from the Model sheet for this file. Percent fields take percentages (70 = 70%).`}
+                : `${fromDefault} of ${CONSTRAINT_FIELDS.length} fields differ from the defaults for this file. Percent fields take percentages (70 = 70%).`}
           </p>
           <p className="mt-100 flex flex-wrap items-center gap-x-300 gap-y-100 text-200 text-muted-foreground">
             <span className="inline-flex items-center gap-100">
               <span aria-hidden className="inline-block size-300 rounded-sm border border-input bg-override" /> Typed, not applied yet: Apply saves it
             </span>
-            <span><span className="font-semibold text-foreground">Bold</span>: saved value differs from the Model sheet</span>
+            <span><span className="font-semibold text-foreground">Bold</span>: saved value differs from the default</span>
           </p>
         </VisualFrame>
 
@@ -150,7 +156,7 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
                   <th scope="col" className={th}>Field_Name_Display</th>
                   <th scope="col" className={th}>Field_Index</th>
                   <th scope="col" className={cn(th, 'text-right')}>Value</th>
-                  <th scope="col" className={cn(th, 'text-right')}>Model sheet</th>
+                  <th scope="col" className={cn(th, 'text-right')}>Default</th>
                   <th scope="col" className={th}>Cell</th>
                 </tr>
               </thead>
@@ -163,7 +169,7 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
                     const next = draft[f.index] === undefined ? current : storedText(f, text);
                     const bad = next === null;
                     const changed = !bad && next !== current;
-                    const differs = current !== DEFAULTS[f.index];
+                    const differs = current !== def(f);
                     return (
                       <tr key={f.index} className="hover:bg-hover">
                         <th scope="row" className={cn(td, 'text-left font-normal')}>
@@ -181,9 +187,9 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
                                 bad ? 'border-destructive' : 'border-input', changed && 'bg-override text-override-foreground',
                                 !changed && differs && 'font-semibold')} />
                             <span aria-hidden className="w-200 text-left text-muted-foreground">{f.kind === 'pct' ? '%' : ''}</span>
-                            <button type="button" aria-label={`Set ${f.display} back to the Model sheet's value`} title="Model sheet value"
-                              disabled={busy || (next === DEFAULTS[f.index] && !bad)}
-                              onClick={() => setDraft(f.index, editText(f, DEFAULTS[f.index] ?? ''))}
+                            <button type="button" aria-label={`Set ${f.display} back to its default`} title="Default value"
+                              disabled={busy || (next === def(f) && !bad)}
+                              onClick={() => setDraft(f.index, editText(f, def(f) ?? ''))}
                               className="rounded-sm p-100 text-muted-foreground hover:bg-accent disabled:invisible">
                               <RotateCcw className="icon-size-200" />
                             </button>
@@ -191,7 +197,7 @@ export function ConstraintsPage({ editing, file, constraints }: PageProps) {
                           {changed && <span className="pr-600 text-100 text-muted-foreground">Not applied · saved {shown(f, current)}</span>}
                           </div>
                         </td>
-                        <td className={cn(td, 'text-right tabular-nums text-muted-foreground')}>{shown(f, DEFAULTS[f.index] ?? '')}</td>
+                        <td className={cn(td, 'text-right tabular-nums text-muted-foreground')}>{shown(f, def(f) ?? '')}</td>
                         <td className={cn(td, 'font-monospace text-muted-foreground')}>Model!{f.cell}</td>
                       </tr>
                     );

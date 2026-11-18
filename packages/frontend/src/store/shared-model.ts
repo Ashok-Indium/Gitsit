@@ -305,10 +305,10 @@ export async function loadLookups(client: Client, type: FileType): Promise<Looku
 }
 
 // ---------- model constants (the Constraints page) ----------
-// They are in the tables Constraints.BPL_ConstraintValues and BPL_ConstraintChanges, outside the
+// They are in the tables Constraints.ConstraintValues and ConstraintChanges, outside the
 // data service's reach (dbo only), so the app reads and writes them through its functions.
 
-/** A Constraints.BPL_ConstraintValues row. */
+/** A Constraints.ConstraintValues row. */
 export interface ConstraintRow {
   File_Name: string;
   Field_Index: string;
@@ -322,6 +322,12 @@ export async function loadConstraints(client: Client): Promise<ConstraintRow[]> 
 
 /** A file's stored constants by Field_Index. */
 export type FileConstants = Map<string, string | null>;
+
+/** The defaults every new input file starts with (Constraints.ConstraintDefaults), by Field_Index. */
+export async function loadConstraintDefaults(client: Client): Promise<FileConstants> {
+  const rows = await client.functions.loadConstraintDefaults.invoke();
+  return new Map(rows.map((r) => [r.Field_Index, r.Value]));
+}
 
 export function constraintsByFile(rows: ConstraintRow[]): Map<string, FileConstants> {
   const out = new Map<string, FileConstants>();
@@ -346,8 +352,8 @@ export interface ConstraintEdit {
 }
 
 /**
- * Saves applied constants into Constraints.BPL_ConstraintValues; the function logs each in
- * BPL_ConstraintChanges with the value it replaced, who applied it (userMail) and when.
+ * Saves applied constants into Constraints.ConstraintValues; the function logs each in
+ * ConstraintChanges with the value it replaced, who applied it (userMail) and when.
  */
 export async function saveConstraints(client: Client, edits: ConstraintEdit[], userMail: string): Promise<void> {
   for (const file of new Set(edits.map((e) => e.File_Name))) {

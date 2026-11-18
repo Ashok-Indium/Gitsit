@@ -11,7 +11,7 @@ import { FILE_TYPES, fileTypeOf, type FileType } from './file-type';
 import bundledRows from './generated/input-rows.json';
 import { FILE_NAME } from './generated/store-fields';
 import {
-  constraintsByFile, constraintsFingerprint, inputFiles, inputFingerprint, loadConstraints, loadInputRows, loadLookups, lookupsFingerprint, seedInput,
+  constraintsByFile, constraintsFingerprint, inputFiles, inputFingerprint, loadConstraintDefaults, loadConstraints, loadInputRows, loadLookups, lookupsFingerprint, seedInput,
   type FileConstants,
 } from './shared-model';
 
@@ -31,7 +31,7 @@ export interface InputLoans {
   /** The input files in Input_table (each File_Name), and the one the model is built from. */
   files: InputFile[];
   fileName: string | null;
-  /** The selected file's stored model constants (Constraints.BPL_ConstraintValues) by Field_Index. */
+  /** The selected file's stored model constants (Constraints.ConstraintValues) by Field_Index. */
   constants: FileConstants;
   /** Any input file's loans, lookups and constants, to calculate it beside the selected one (null before they are read). */
   inputFor: (fileName: string) => EngineInput | null;
@@ -39,6 +39,8 @@ export interface InputLoans {
   rememberConstants: (fileName: string, values: FileConstants) => void;
   /** Why the model constants could not be read (every file calculates with the Model sheet's). */
   constraintsError: string | null;
+  /** The defaults new files start with (Constraints.ConstraintDefaults); null until read, or when they can't be. */
+  constraintDefaults: FileConstants | null;
   /** Why Fabric's Input_table could not be read (the bundled input file is used instead). */
   error: string | null;
   /** Why the selected file's type's lookup tables could not be read (the workbook's own lookup values are used instead). */
@@ -84,7 +86,7 @@ const lookupsKey = (byType: LookupsByType) => FILE_TYPES.map((t) => (byType[t] ?
  * changes every few minutes and on returning to the tab. The model is built from `fileName`'s
  * loans and constants, or the first file's when it is not in the table. Each file calculates with
  * the lookups of its type (its name's NPL or BPL prefix): the NPL_Lookups or BPL_Lookups tables,
- * through the app's loadLookups function; the constants come from Constraints.BPL_ConstraintValues,
+ * through the app's loadLookups function; the constants come from Constraints.ConstraintValues,
  * through its loadConstraints function.
  */
 export function useInputLoans(fileName: string | null): InputLoans {
@@ -97,6 +99,7 @@ export function useInputLoans(fileName: string | null): InputLoans {
   const [fromFabric, setFromFabric] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [constraintsError, setConstraintsError] = useState<string | null>(null);
+  const [constraintDefaults, setConstraintDefaults] = useState<FileConstants | null>(null);
   const [updated, setUpdated] = useState(false);
   const loaded = useRef<string | null>(null);
 
@@ -127,7 +130,10 @@ export function useInputLoans(fileName: string | null): InputLoans {
       const read = await readLookups(client, all);
       // Without them every file calculates with the Model sheet's constants.
       const constraints = await loadConstraints(client).catch((e: unknown) => { if (!cancelled) setConstraintsError(message(e)); return null; });
+      // Without them the Constraints page shows the Model sheet's values as the defaults.
+      const defaults = await loadConstraintDefaults(client).catch(() => null);
       if (cancelled) return;
+      setConstraintDefaults(defaults);
       loaded.current = inputFingerprint(all) + lookupsKey(read.byType);
       setLookups(read.byType);
       setLookupErrors(read.errors);
@@ -187,6 +193,6 @@ export function useInputLoans(fileName: string | null): InputLoans {
 
   return {
     input, inputFor, files, fileName: selected, constants: (selected && known.get(selected)) || NONE, rememberConstants,
-    constraintsError, error, lookupError: lookupError ? `${fileTypeOf(selected!)} lookups: ${lookupError}` : null, updated,
+    constraintsError, constraintDefaults, error, lookupError: lookupError ? `${fileTypeOf(selected!)} lookups: ${lookupError}` : null, updated,
   };
 }
