@@ -19,6 +19,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { CASH_FLOW_COLUMNS } from '../src/store/cash-flow-fields.ts';
 import { LOOKUP_TABLES } from '../src/store/generated/lookup-fields.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -50,7 +51,13 @@ const TABLES: { table: string; entity: string; key: string[]; actions: string[];
   { table: 'Input_table', entity: 'InputLoan', key: ['File_Name', 'loan_id'], actions: ALL },
   // DECIMAL(18,8) keeps Loan_Model's ~470 numbers within SQL's 8,060-byte row (9 bytes each, not 13).
   { table: 'Loan_Model', entity: 'LoanModel', key: ['File_Name', 'loan_id'], actions: ALL, numbers: [18, 8] },
-  { table: 'Loan_Model_Monthly', entity: 'LoanModelMonthly', key: ['File_Name', 'loan_id', 'series'], actions: ALL },
+  // One row per loan: the four scenario cash flows month by month (src/store/cash-flow-fields.ts).
+  { table: 'Loan_Model_Monthly', entity: 'LoanModelMonthly', key: ['File_Name', 'loan_id'], actions: ALL, columns: [
+    { columnName: 'File_Type', dataType: 'nvarchar', isNullable: false, maxLength: 10 },
+    { columnName: 'loan_id', dataType: 'nvarchar', isNullable: false, maxLength: 50 },
+    ...CASH_FLOW_COLUMNS.map((c): Column => ({ columnName: c.name, dataType: 'decimal', isNullable: true })),
+    { columnName: 'File_Name', dataType: 'nvarchar', isNullable: false, maxLength: 200 },
+  ] },
   // The change log is append-only.
   { table: 'LoanChanges', entity: 'LoanChange', key: ['File_Name', 'Loan_Id', 'Column_Name', 'Changed_On'], actions: READ_CREATE },
   // The lookups are edited in the BPL_Lookups tables; the app reads them from this one table.
@@ -58,8 +65,8 @@ const TABLES: { table: string; entity: string; key: string[]; actions: string[];
   // (The model constants are in the Constraints schema, outside the data service's reach: the app's
   // functions read and write them. See scripts/gen-constraints.ts.)
 ];
-/** Tables the app creates empty (nothing to move over, no view with an original name). */
-const NEW_TABLES = new Set(['LoanChanges', CACHE.table]);
+/** Tables the app creates empty (nothing to move over). Loan_Model_Monthly was rebuilt one row per loan. */
+const NEW_TABLES = new Set(['LoanChanges', 'Loan_Model_Monthly', CACHE.table]);
 
 const DEFAULTS: Record<string, string> = { Table_Type: 'BPL' };
 

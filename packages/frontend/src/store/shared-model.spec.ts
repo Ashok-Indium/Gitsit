@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import type { Snapshot } from '@/engine/protocol';
 
+import { CASH_FLOW_COLUMNS } from './cash-flow-fields';
 import { camelCase } from './column-names';
 import { MODEL_COLUMNS, MONTHLY_SERIES } from './generated/store-fields';
-import { changedColumns, displayName, editEntries, latestEdits, modelRow, monthlyRows, resetEntries } from './shared-model';
+import { changedColumns, displayName, editEntries, latestEdits, modelRow, monthlyRow, resetEntries } from './shared-model';
 
 const strips = { Perf: [100, 50], Payoff: [], REO: [], NPL: [] };
 const loan = (row: number, id: string, fade: number) => ({ row, values: { A: id, AJ: fade, Y: 200000, L: 'CA' }, strips });
@@ -61,12 +62,18 @@ describe('shared model store', () => {
     expect(new Set(MODEL_COLUMNS.map((c) => camelCase(c.name))).size).toBe(MODEL_COLUMNS.length);
   });
 
-  it('puts the month-by-month blocks in Loan_Model_Monthly, one row per series', () => {
+  it('puts the Perf, Payoff, REO and NPL cash flows in one Loan_Model_Monthly row per loan', () => {
     const perf = MONTHLY_SERIES.find((s) => s.series === 'Perf CF')!;
-    const l = { row: 17, values: { A: '1001', [perf.cols[0]]: 100, [perf.cols[1]]: 'x', [perf.cols[2]]: 50.123456789012 }, strips };
-    const rows = monthlyRows(l);
-    expect(rows).toHaveLength(MONTHLY_SERIES.length);
-    expect(rows.find((r) => r.series === 'Perf CF')).toMatchObject({ loan_id: '1001', periods: 'month 1-36', m01: 100, m02: null, m03: 50.123456789 });
+    const npl = MONTHLY_SERIES.find((s) => s.series === 'NPL CF')!;
+    const l = { row: 17, values: { A: '1001', [perf.cols[0]]: 100, [perf.cols[1]]: 'x', [perf.cols[2]]: 50.123456789012, [npl.cols[35]]: -7 }, strips };
+    const row = monthlyRow(l, () => 'NPL_Groundfloor_11_16_2026 14h-30m');
+    expect(row).toMatchObject({
+      File_Type: 'NPL', loan_id: '1001', File_Name: 'NPL_Groundfloor_11_16_2026 14h-30m',
+      perf_cf_m01: 100, perf_cf_m02: null, perf_cf_m03: 50.123456789, npl_cf_m36: -7, payoff_cf_m01: null, reo_cf_m36: null,
+    });
+    expect(CASH_FLOW_COLUMNS).toHaveLength(4 * 36);
+    expect(Object.keys(row)).toHaveLength(3 + 4 * 36);
+    // Every Model column is calculated once, whether Loan_Model stores it or a cash-flow block holds it.
     const covered = new Set([...MODEL_COLUMNS.map((c) => c.col), ...MONTHLY_SERIES.flatMap((s) => s.cols)]);
     expect(covered.size).toBe(MODEL_COLUMNS.length + MONTHLY_SERIES.reduce((n, s) => n + s.cols.length, 0));
   });

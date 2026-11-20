@@ -1,6 +1,7 @@
 // Reads and writes the app's tables in gitsit-test through the Rayfin data service: Input_table
-// (every input file's loans, by File_Name), Loan_Model and Loan_Model_Monthly (every loan's Model
-// sheet values) and LoanChanges (one row per edited value). The lookup tables (BPL_Lookups or
+// (every input file's loans, by File_Name), Loan_Model (every loan's Model sheet values),
+// Loan_Model_Monthly (every loan's Perf, Payoff, REO and NPL cash flows by month) and LoanChanges
+// (one row per edited value). The lookup tables (BPL_Lookups or
 // NPL_Lookups, by the file's type) and the model constants (the Constraints schema) are read and
 // written through the app's functions. Every row carries its Table_Type (BPL); the app works on one
 // input file (File_Name) at a time.
@@ -14,10 +15,11 @@ import type { Loan } from '@/report/measures';
 import type { InputRow } from '@/engine/load-input';
 
 import inputRows from './generated/input-rows.json';
-import { lookupTableName, type FileType } from './file-type';
+import { CASH_FLOW_COLUMNS } from './cash-flow-fields';
+import { fileTypeOf, lookupTableName, type FileType } from './file-type';
 import { DATA_TABLES } from './generated/data-tables';
 import { LOOKUP_TABLES, TABLE_TYPE } from './generated/lookup-fields';
-import { FILE_NAME, INPUT_COLUMNS, MODEL_COLUMNS, MONTH_COLUMNS, MONTHLY_SERIES } from './generated/store-fields';
+import { FILE_NAME, INPUT_COLUMNS, MODEL_COLUMNS } from './generated/store-fields';
 
 type Client = Awaited<ReturnType<typeof getRayfinClient>>;
 type Value = string | number | null;
@@ -392,10 +394,9 @@ export function inputFingerprint(rows: InputRow[]): string {
 }
 
 const MODEL_NAMES = [...MODEL_COLUMNS.map((c) => c.name), 'File_Name'];
-const MONTHLY_NAMES = ['loan_id', 'series', 'periods', ...MONTH_COLUMNS, 'File_Name'];
-const monthlyKey = (loan: string, series: string) => `${loan}|${series}`;
+const MONTHLY_NAMES = ['File_Type', 'loan_id', ...CASH_FLOW_COLUMNS.map((c) => c.name), 'File_Name'];
 
-/** What Loan_Model (by loan ID) and Loan_Model_Monthly (by loan ID and series) hold for one input file. */
+/** What Loan_Model and Loan_Model_Monthly hold for one input file, by loan ID. */
 export interface StoredModel {
   model: Map<string, Row>;
   monthly: Map<string, Row>;
@@ -408,28 +409,32 @@ export async function loadModelRows(client: Client, fileName: string): Promise<S
   ]);
   return {
     model: new Map(model.map((r) => [String(r.loan_id), r])),
-    monthly: new Map(monthly.map((r) => [monthlyKey(String(r.loan_id), String(r.series)), r])),
+    monthly: new Map(monthly.map((r) => [String(r.loan_id), r])),
   };
 }
 
-/** A loan's Loan_Model_Monthly rows: one per series, the months in m01.. (numbers only). */
-export function monthlyRows(l: Loan, fileNameOf: FileNameOf = defaultFileName): Record<string, Value>[] {
+/**
+ * A loan's Loan_Model_Monthly row: its file's type (NPL or BPL), and the Perf, Payoff, REO and NPL
+ * cash flows month by month (perf_cf_m01 … npl_cf_m36; numbers only).
+ */
+export function monthlyRow(l: Loan, fileNameOf: FileNameOf = defaultFileName): Record<string, Value> {
   const id = loanId(l);
-  return MONTHLY_SERIES.map((s) => {
-    const row: Record<string, Value> = { Table_Type: TABLE_TYPE, loan_id: id, series: s.series, periods: s.periods, File_Name: fileNameOf(id) };
-    MONTH_COLUMNS.forEach((m, i) => {
-      const v = s.cols[i] ? l.values[s.cols[i]] : null;
-      row[m] = typeof v === 'number' && Number.isFinite(v) && Math.abs(v) < MONTHLY_MAX ? round10(v) : null;
-    });
-    return row;
-  });
+  const file = fileNameOf(id);
+  const row: Record<string, Value> = { File_Type: fileTypeOf(file), loan_id: id, File_Name: file };
+  for (const c of CASH_FLOW_COLUMNS) {
+    const v = l.values[c.col];
+    row[c.name] = typeof v === 'number' && Number.isFinite(v) && Math.abs(v) < MONTHLY_MAX ? round10(v) : null;
+  }
+  return row;
 }
 
 /** The Loan_Model_Monthly columns of `next` that differ from what is stored. */
 function changedMonths(next: Record<string, Value>, stored: Row | undefined): Record<string, Value> {
   const out: Record<string, Value> = {};
-  for (const k of ['periods', 'File_Name']) if (!stored || stored[k] !== next[k]) out[k] = next[k];
-  for (const m of MONTH_COLUMNS) if (!stored || norm('decimal', next[m], round10) !== norm('decimal', stored[m], round10)) out[m] = next[m];
+  for (const k of ['File_Type', 'File_Name']) if (!stored || stored[k] !== next[k]) out[k] = next[k];
+  for (const { name } of CASH_FLOW_COLUMNS) {
+    if (!stored || norm('decimal', next[name], round10) !== norm('decimal', stored[name], round10)) out[name] = next[name];
+  }
   return out;
 }
 
@@ -448,8 +453,8 @@ export async function syncModelRows(client: Client, snapshot: Snapshot, stored: 
     await deleteRow(client, 'Loan_Model_Monthly', r.id);
     stored.monthly.delete(key);
   });
-  const monthWrites = snapshot.loans.flatMap((l) => monthlyRows(l, fileNameOf)).flatMap((next) => {
-    const key = monthlyKey(String(next.loan_id), String(next.series));
+  const monthWrites = snapshot.loans.map((l) => monthlyRow(l, fileNameOf)).flatMap((next) => {
+    const key = String(next.loan_id);
     const prev = stored.monthly.get(key);
     const diff = changedMonths(next, prev);
     return Object.keys(diff).length ? [{ key, prev, next, diff }] : [];
