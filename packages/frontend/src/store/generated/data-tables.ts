@@ -1218,7 +1218,7 @@ export const DATA_TABLES = {
       "loan_id"
     ],
     "columns": [
-      "File_Type",
+      "FileType",
       "loan_id",
       "perf_cf_m01",
       "perf_cf_m02",

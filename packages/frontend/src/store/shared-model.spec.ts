@@ -68,7 +68,7 @@ describe('shared model store', () => {
     const l = { row: 17, values: { A: '1001', [perf.cols[0]]: 100, [perf.cols[1]]: 'x', [perf.cols[2]]: 50.123456789012, [npl.cols[35]]: -7 }, strips };
     const row = monthlyRow(l, () => 'NPL_Groundfloor_11_16_2026 14h-30m');
     expect(row).toMatchObject({
-      File_Type: 'NPL', loan_id: '1001', File_Name: 'NPL_Groundfloor_11_16_2026 14h-30m',
+      FileType: 'NPL', loan_id: '1001', File_Name: 'NPL_Groundfloor_11_16_2026 14h-30m',
       perf_cf_m01: 100, perf_cf_m02: null, perf_cf_m03: 50.123456789, npl_cf_m36: -7, payoff_cf_m01: null, reo_cf_m36: null,
     });
     expect(CASH_FLOW_COLUMNS).toHaveLength(4 * 36);

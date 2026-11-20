@@ -1,6 +1,6 @@
 // What LoanModelMonthlies stores: one row per loan of an input file, with the four scenario
 // sections of the DCF sheets (Perf, Payoff, REO, NPL) as columns, month by month: perf_cf_m01 …
-// perf_cf_m36, payoff_cf_m01 … npl_cf_m36, and the file's type (NPL or BPL). Read by
+// perf_cf_m36, payoff_cf_m01 … npl_cf_m36, and the file's type, FileType (NPL or BPL). Read by
 // scripts/gen-entities.ts for the table and by the app when it saves a file's results.
 
 import { MONTHLY_SERIES } from './generated/store-fields.ts';

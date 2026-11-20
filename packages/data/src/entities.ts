@@ -1214,7 +1214,7 @@ export class LoanModel {
 @authenticated(['create', 'read', 'update', 'delete'])
 export class LoanModelMonthly {
   @uuid() id!: string;
-  @text({ max: 10 }) File_Type!: string;
+  @text({ max: 10 }) FileType!: string;
   @text({ max: 50 }) loan_id!: string;
   @decimal({ precision: 28, scale: 10, optional: true }) perf_cf_m01?: number;
   @decimal({ precision: 28, scale: 10, optional: true }) perf_cf_m02?: number;

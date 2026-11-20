@@ -53,7 +53,7 @@ const TABLES: { table: string; entity: string; key: string[]; actions: string[];
   { table: 'Loan_Model', entity: 'LoanModel', key: ['File_Name', 'loan_id'], actions: ALL, numbers: [18, 8] },
   // One row per loan: the four scenario cash flows month by month (src/store/cash-flow-fields.ts).
   { table: 'Loan_Model_Monthly', entity: 'LoanModelMonthly', key: ['File_Name', 'loan_id'], actions: ALL, columns: [
-    { columnName: 'File_Type', dataType: 'nvarchar', isNullable: false, maxLength: 10 },
+    { columnName: 'FileType', dataType: 'nvarchar', isNullable: false, maxLength: 10 },
     { columnName: 'loan_id', dataType: 'nvarchar', isNullable: false, maxLength: 50 },
     ...CASH_FLOW_COLUMNS.map((c): Column => ({ columnName: c.name, dataType: 'decimal', isNullable: true })),
     { columnName: 'File_Name', dataType: 'nvarchar', isNullable: false, maxLength: 200 },

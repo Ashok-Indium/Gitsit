@@ -394,7 +394,7 @@ export function inputFingerprint(rows: InputRow[]): string {
 }
 
 const MODEL_NAMES = [...MODEL_COLUMNS.map((c) => c.name), 'File_Name'];
-const MONTHLY_NAMES = ['File_Type', 'loan_id', ...CASH_FLOW_COLUMNS.map((c) => c.name), 'File_Name'];
+const MONTHLY_NAMES = ['FileType', 'loan_id', ...CASH_FLOW_COLUMNS.map((c) => c.name), 'File_Name'];
 
 /** What Loan_Model and Loan_Model_Monthly hold for one input file, by loan ID. */
 export interface StoredModel {
@@ -420,7 +420,7 @@ export async function loadModelRows(client: Client, fileName: string): Promise<S
 export function monthlyRow(l: Loan, fileNameOf: FileNameOf = defaultFileName): Record<string, Value> {
   const id = loanId(l);
   const file = fileNameOf(id);
-  const row: Record<string, Value> = { File_Type: fileTypeOf(file), loan_id: id, File_Name: file };
+  const row: Record<string, Value> = { FileType: fileTypeOf(file), loan_id: id, File_Name: file };
   for (const c of CASH_FLOW_COLUMNS) {
     const v = l.values[c.col];
     row[c.name] = typeof v === 'number' && Number.isFinite(v) && Math.abs(v) < MONTHLY_MAX ? round10(v) : null;
@@ -431,7 +431,7 @@ export function monthlyRow(l: Loan, fileNameOf: FileNameOf = defaultFileName): R
 /** The Loan_Model_Monthly columns of `next` that differ from what is stored. */
 function changedMonths(next: Record<string, Value>, stored: Row | undefined): Record<string, Value> {
   const out: Record<string, Value> = {};
-  for (const k of ['File_Type', 'File_Name']) if (!stored || stored[k] !== next[k]) out[k] = next[k];
+  for (const k of ['FileType', 'File_Name']) if (!stored || stored[k] !== next[k]) out[k] = next[k];
   for (const { name } of CASH_FLOW_COLUMNS) {
     if (!stored || norm('decimal', next[name], round10) !== norm('decimal', stored[name], round10)) out[name] = next[name];
   }
