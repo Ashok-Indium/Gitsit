@@ -1,5 +1,5 @@
 // Generates the Fabric notebook that loads input Excel files from the Lakehouse folder
-// gitsit_files/Files/input into Input_table, one File_Name per file (the Excel file's name).
+// gitsit_files/Files/input into dbo.InputLoans, one File_Name per file (the Excel file's name).
 //
 //   node scripts/gen-loader.ts
 //
@@ -21,7 +21,7 @@ const DATABASE = 'gitsit-test-e40f6906-4431-48db-8eca-33c1fd246d16';
 
 const columns = INPUT_COLUMNS.map((c) => [c.header, c.name, c.type]);
 
-const code = `# Loads every new or changed Excel file in this Lakehouse's Files/input folder into Input_table
+const code = `# Loads every new or changed Excel file in this Lakehouse's Files/input folder into InputLoans
 # (database gitsit-test). Each file's rows get File_Name = the file's name without ".xlsx" and
 # with the load date and time (US Eastern, 24-hour) added, e.g. "BPL_Pacific Private Money.xlsx"
 # loaded on 16 Nov 2026 at 14:30 -> "BPL_Pacific Private Money_11_16_2026 14h-30m", so each upload
@@ -49,7 +49,7 @@ FAILED = "Files/Failed"
 REASONS = "Files/Load errors"  # not under (or named like) Failed, so only the file itself sends an email
 TABLE_TYPE = "${TABLE_TYPE}"
 TEXT_MAX = 400
-# Input_table columns: [Excel header, column, type]; the first column is always loan_id.
+# InputLoans columns: [Excel header, column, type]; the first column is always loan_id.
 COLUMNS = json.loads(r'''${JSON.stringify(columns)}''')
 
 def connect():
@@ -61,7 +61,7 @@ def empty(v):
     return v is None or (isinstance(v, str) and v == "") or (not isinstance(v, str) and pd.isna(v))
 
 def value(v, name, kind):
-    """A cell as Input_table stores it (the same rules as the original load)."""
+    """A cell as InputLoans stores it (the same rules as the original load)."""
     if empty(v):
         return None
     if isinstance(v, pd.Timestamp):
@@ -125,7 +125,7 @@ VALUES (?, ?, ?, ?, ?, SYSUTCDATETIME(), SYSUTCDATETIME())""", *args, f)
 loaded = {r[0]: r[1] for r in cur.execute("SELECT File_Name, File_Modified FROM dbo.Input_files").fetchall()}
 
 names = ["Table_Type", "File_Name"] + [name for _, name, _ in COLUMNS]
-insert = f"INSERT INTO dbo.Input_table ({', '.join('[' + n + ']' for n in names)}) VALUES ({', '.join('?' for _ in names)})"
+insert = f"INSERT INTO dbo.InputLoans ({', '.join('[' + n + ']' for n in names)}) VALUES ({', '.join('?' for _ in names)})"
 cur.fast_executemany = True
 results = []
 summary = {"loaded": [], "failed": []}
@@ -150,7 +150,7 @@ for f in sorted(os.listdir(FOLDER)):
         set_status(f, "Running")
         try:
             rows, missing = read_file(path)
-            cur.execute("DELETE FROM dbo.Input_table WHERE File_Name = ?", file_name)
+            cur.execute("DELETE FROM dbo.InputLoans WHERE File_Name = ?", file_name)
             if rows:
                 cur.executemany(insert, [[TABLE_TYPE, file_name] + r for r in rows])
             cur.execute("DELETE FROM dbo.Input_files WHERE File_Name = ?", file_name)

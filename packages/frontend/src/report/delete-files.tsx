@@ -12,8 +12,8 @@ const btn = 'inline-flex items-center justify-center gap-100 rounded-md px-300 p
 
 /** What the Fabric tables lose for each deleted file. */
 const REMOVED = [
-  'its loans (Input_table)',
-  'its calculated model (Loan_Model and Loan_Model_Monthly)',
+  'its loans (InputLoans)',
+  'its calculated model (LoanModels and LoanModelMonthlies)',
   'its loan changes (LoanChanges)',
   'its load record (Input_files) and upload status (Upload_status)',
   'its constraint values and their history (Constraints schema)',
