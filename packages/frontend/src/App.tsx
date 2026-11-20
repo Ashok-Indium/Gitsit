@@ -52,7 +52,11 @@ function rememberedFile(): string | null {
 }
 
 function App() {
-  const email = useContext(AuthContext)?.session?.user?.email ?? null;
+  const auth = useContext(AuthContext);
+  // The signed-in user. Inside the Fabric portal the session can come without an email: it is still
+  // a signed-in user (who may save), recorded by its user id.
+  const sessionUser = auth?.isAuthenticated ? auth.session?.user ?? null : null;
+  const email = sessionUser ? sessionUser.email || `fabric-user-${sessionUser.id}` : null;
   const [fileChoice, setFileChoice] = useState<string | null>(rememberedFile);
   const loans = useInputLoans(fileChoice);
   const engine = useModelEngine(loans.input);
